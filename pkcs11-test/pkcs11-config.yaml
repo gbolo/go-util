@@ -1,0 +1,12 @@
+pkcs11:
+  library: /usr/lib/softhsm/libsofthsm2.so
+  label: DlbpAdapter
+  pin: securekey
+
+aes:
+  keylength: 32
+
+create:
+  type: aes
+  non-ephemeral: false
+  label: someaeslabel
