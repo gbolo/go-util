@@ -1,7 +1,7 @@
 pkcs11:
   library: /usr/lib/softhsm/libsofthsm2.so
-  label: DlbpAdapter
-  pin: securekey
+  label: someLabel
+  pin: somePin
 
 aes:
   keylength: 32
@@ -10,7 +10,7 @@ aes:
   label: aes_testkey_01
 
 ecdsa:
-  namedCurve: P256
+  curve: P256
   message: "Some Important Message"
   non-ephemeral: false
   label: ec_testkey_01
