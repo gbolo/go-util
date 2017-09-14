@@ -50,6 +50,7 @@ func GetAesPkcs11Template(objectLabel string, AesKeyLength int, pkcs11LibInfo pk
 	fmt.Println("PKCS11 Attributes Required:")
 	fmt.Println(" - CKA_KEY_TYPE:", HR_keytype)
 	fmt.Println(" - CKA_LABEL:", objectLabel)
+	fmt.Println(" - CKA_VALUE_LEN:", AesKeyLength)
 	fmt.Println(" - CKA_TOKEN:", !ephemeral)
 	fmt.Println(" - CKA_SIGN:", true)
 

@@ -1,17 +1,3 @@
-// Copyright © 2017 NAME HERE <EMAIL ADDRESS>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package cmd
 
 import (
@@ -26,20 +12,22 @@ import (
 	"github.com/spf13/viper"
 )
 
-var keyType string
-var keyLabel string
-var nonEphemeral bool
-
 // aesHmac represents the aes command
 var aesHmac = &cobra.Command{
 	Use:   "aes-hmac",
-	Short: "Creates an AES key then tests HMAC signing with it",
-	Long: `Creates an AES key then tests HMAC signing with it`,
+	Short: "Creates an AES key object then tests mechanism CKM_SHA256_HMAC with it",
+	Long: `Creates an AES key object then tests mechanism CKM_SHA256_HMAC with it`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		setCommonFlagValues()
+		setGlobalFlagValues()
 		PrintPkcs11Settings()
-		CreateKey()
+		p, session, sindex := LoginPkcs11()
+		defer p.Destroy()
+		defer p.Finalize()
+		defer p.CloseSession(session)
+		defer p.Logout(session)
+
+		CreateAESKey(p, session, sindex)
 	},
 }
 
@@ -51,83 +39,39 @@ func init() {
 	aesHmac.PersistentFlags().IntP( "aes-keylength", "k", 32, "Length of AES Key")
 	aesHmac.PersistentFlags().StringP( "object-label", "o", "testkeyobject", "Label of Object to use")
 	aesHmac.PersistentFlags().Bool( "non-ephemeral",  false, "Sets CKA_TOKEN to true")
+	aesHmac.PersistentFlags().String( "message", "FooBar", "Raw message to sign")
 	viper.BindPFlag("aes.keylength", aesHmac.PersistentFlags().Lookup("aes-keylength"))
-	viper.BindPFlag("create.label", aesHmac.PersistentFlags().Lookup("object-label"))
-	viper.BindPFlag("create.type", aesHmac.PersistentFlags().Lookup("key-type"))
-	viper.BindPFlag("create.non-ephemeral", aesHmac.PersistentFlags().Lookup("non-ephemeral"))
+	viper.BindPFlag("aes.label", aesHmac.PersistentFlags().Lookup("object-label"))
+	viper.BindPFlag("aes.non-ephemeral", aesHmac.PersistentFlags().Lookup("non-ephemeral"))
+	viper.BindPFlag("aes.message", aesHmac.PersistentFlags().Lookup("message"))
 
 }
 
-
-func setCommonFlagValues() {
-	pkcs11Lib = viper.GetString("pkcs11.library")
-	pkcs11SlotLabel = viper.GetString("pkcs11.label")
-	pkcs11SlotPin = viper.GetString("pkcs11.pin")
-	keyType = viper.GetString("create.type")
-	keyLabel = viper.GetString("create.label")
-	nonEphemeral = viper.GetBool("create.non-ephemeral")
-}
-
-func displaySettings() {
+// Prints out the object settings
+func displayAesSettings(keyLabel string, AesKeyLength int, nonEphemeral bool) {
 	fmt.Printf(
-		"\nObject Settings:\n - type: %s\n - label: %s\n - nonEphemeral: %t\n",
-		keyType,
+		"\nObject Settings:\n - type: %s\n - label: %s\n - length: %d\n - nonEphemeral: %t\n",
+		"AES",
 		keyLabel,
+		AesKeyLength,
 		nonEphemeral,
 	)
 }
 
-func CreateKey() {
+// Creates an AES key object then tests mechanism CKM_SHA256_HMAC with it
+func CreateAESKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
 
-	// Initialize Library
-	p, err := p11.InitPkcs11(pkcs11Lib)
-	if err != nil {
-		ExitWithMessage(fmt.Sprintf("Could not load pkcs11 library: %s", pkcs11Lib), err)
-	}
-	defer p.Destroy()
-	defer p.Finalize()
-
-	// line break for readability
-	fmt.Printf("\n")
-
-	// Look for provided slot
-	slot, sindex, err := p11.FindSlotByLabel(p, pkcs11SlotLabel)
-	if err != nil {
-		ExitWithMessage(fmt.Sprintf("PKCS11 provider slot label not found: %s", pkcs11SlotLabel), err)
-	}
-
-	// Create session for matching slot
-	session, err := p.OpenSession(slot, pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
-	if err != nil {
-		ExitWithMessage("Creating session", err)
-	}
-	defer p.CloseSession(session)
-
-	// Login to access private objects
-	fmt.Printf("PKCS11 provider attempting login to slot labeled: %s\n", pkcs11SlotLabel)
-	err = p.Login(session, pkcs11.CKU_USER, pkcs11SlotPin)
-	if err != nil {
-		ExitWithMessage("Login", err)
-	}
-	defer p.Logout(session)
+	// Set aes variables
+	keyLabel := viper.GetString("aes.label")
+	nonEphemeral := viper.GetBool("aes.non-ephemeral")
+	AesKeyLength := viper.GetInt("aes.keylength")
+	messageToSign := viper.GetString("aes.message")
 
 	// output the settings
-	displaySettings()
-
-	if c.CaseInsensitiveEquals(keyType, "aes") {
-		CreateAESKey(p, session, sindex)
-	} else {
-		fmt.Println("non aes keytype not implemented yet.")
-	}
-
-}
-
-func CreateAESKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
+	displayAesSettings(keyLabel, AesKeyLength, nonEphemeral)
 
 	// Get library info
 	pkcs11LibInfo, _ := p.GetInfo()
-
-	AesKeyLength := viper.GetInt("aes.keylength")
 
 	// pkcs11 object labels to look for
 	pkcs11ObjLabels := []string{keyLabel}
@@ -191,12 +135,16 @@ func CreateAESKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
 		}
 
 		// Test signing with mechanism CKM_SHA256_HMAC
-		testMsg := []byte("someRandomString")
+		testMsg := []byte(messageToSign)
 		hmac, err := p11.SignHmacSha256(p, session, aesKey, testMsg)
 		if err != nil {
 			ExitWithMessage("Error signing with CKM_SHA256_HMAC", err)
 		}
-		fmt.Printf("Successfully tested CKM_SHA256_HMAC on key with label: %s \n HMAC %x\n", ObjLabel, hmac)
+		fmt.Printf("Successfully tested CKM_SHA256_HMAC on key with label: %s \n MESSAGE: %s\n HMAC: %x\n",
+			ObjLabel,
+			messageToSign,
+			hmac,
+		)
 	}
 
 	// Exit nicely if we reached this point
@@ -204,13 +152,4 @@ func CreateAESKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
 
 }
 
-/* Exit with message and code 1 */
-func ExitWithMessage(message string, err error) {
 
-	if err == nil {
-		fmt.Printf("\nFatal Error: %s\n", message)
-	} else {
-		fmt.Printf("\nFatal Error: %s\n%s\n", message, err)
-	}
-	os.Exit(1)
-}

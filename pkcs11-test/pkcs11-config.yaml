@@ -5,8 +5,13 @@ pkcs11:
 
 aes:
   keylength: 32
-
-create:
-  type: aes
+  message: "Some Important Message"
   non-ephemeral: false
-  label: someaeslabel
+  label: aes_testkey_01
+
+ecdsa:
+  namedCurve: P256
+  message: "Some Important Message"
+  non-ephemeral: false
+  label: ec_testkey_01
+
