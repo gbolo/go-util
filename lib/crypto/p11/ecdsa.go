@@ -8,7 +8,7 @@ import (
 )
 
 /* return a set of attributes that we require for our ecdsa keypair */
-func GetECDSAPkcs11Template(namedCurve string) (pubKeyTemplate []*pkcs11.Attribute, privKeyTemplate []*pkcs11.Attribute, err error) {
+func GetECDSAPkcs11Template(objectLabel string, namedCurve string, ephemeral bool) (pubKeyTemplate []*pkcs11.Attribute, privKeyTemplate []*pkcs11.Attribute, err error) {
 
 	// get ec params
 	ecParam, err := GetECParamMarshaled(namedCurve)
@@ -20,7 +20,7 @@ func GetECDSAPkcs11Template(namedCurve string) (pubKeyTemplate []*pkcs11.Attribu
 	pubKeyTemplate = []*pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKK_EC),
 		pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_PUBLIC_KEY),
-		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true), /* session only. destroy later */
+		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, !ephemeral), /* session only. destroy later */
 		pkcs11.NewAttribute(pkcs11.CKA_VERIFY, true),
 		pkcs11.NewAttribute(pkcs11.CKA_EC_PARAMS, ecParam),
 		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, false),
@@ -32,13 +32,20 @@ func GetECDSAPkcs11Template(namedCurve string) (pubKeyTemplate []*pkcs11.Attribu
 	privKeyTemplate = []*pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKK_EC),
 		pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_PRIVATE_KEY),
-		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true), /* session only. destroy later */
+		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, !ephemeral), /* session only. destroy later */
 		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, true),
 		pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
 		pkcs11.NewAttribute(pkcs11.CKA_ID, []byte("PRIV-ECDSA-P256")),
 		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "PRIV-ECDSA-P256"),
 		pkcs11.NewAttribute(pkcs11.CKA_EXTRACTABLE, false),
 	}
+
+	fmt.Println("PKCS11 Attributes Required:")
+	fmt.Println(" - CKA_KEY_TYPE:", "CKK_EC")
+	fmt.Println(" - CKA_LABEL:", objectLabel)
+	fmt.Println(" - CKA_EC_PARAMS:", namedCurve)
+	fmt.Println(" - CKA_TOKEN:", !ephemeral)
+	fmt.Println(" - CKA_SIGN:", true)
 
 	return
 }
@@ -69,10 +76,10 @@ func GetECParamMarshaled(namedCurve string) (ecParamMarshaled []byte, err error)
 }
 
 /* Create an ECDSA keypair with required template */
-func CreateECDSAKeyPair(p *pkcs11.Ctx, session pkcs11.SessionHandle, namedCurve string) (ecdsaPrivKey pkcs11.ObjectHandle, ecdsaPubKey pkcs11.ObjectHandle, err error) {
+func CreateECDSAKeyPair(p *pkcs11.Ctx, session pkcs11.SessionHandle, objectLabel string, namedCurve string, ephemeral bool) (ecdsaPrivKey pkcs11.ObjectHandle, ecdsaPubKey pkcs11.ObjectHandle, err error) {
 
 	// get the required attributes
-	pubKeyTemplate, privKeyTemplate, err := GetECDSAPkcs11Template(namedCurve)
+	pubKeyTemplate, privKeyTemplate, err := GetECDSAPkcs11Template(objectLabel, namedCurve, ephemeral)
 
 	if err != nil {
 		return

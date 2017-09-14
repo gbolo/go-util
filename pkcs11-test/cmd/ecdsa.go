@@ -13,10 +13,10 @@ import (
 )
 
 // aesHmac represents the aes command
-var aesHmac = &cobra.Command{
-	Use:   "aes-hmac",
-	Short: "Creates an AES key object then tests mechanism CKM_SHA256_HMAC with it",
-	Long: `Creates an AES key object then tests mechanism CKM_SHA256_HMAC with it`,
+var ecdsaCmd = &cobra.Command{
+	Use:   "ecdsa",
+	Short: "Creates an EC key object then tests mechanism CKM_ECDSA with it",
+	Long: `Creates an EC key object then tests mechanism CKM_ECDSA with it`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		setGlobalFlagValues()
@@ -27,47 +27,47 @@ var aesHmac = &cobra.Command{
 		defer p.CloseSession(session)
 		defer p.Logout(session)
 
-		CreateAESKey(p, session, sindex)
+		CreateECDSAKey(p, session, sindex)
 	},
 }
 
 
 func init() {
-	RootCmd.AddCommand(aesHmac)
+	RootCmd.AddCommand(ecdsaCmd)
 
-	aesHmac.PersistentFlags().IntP( "aes-keylength", "k", 32, "Length of AES Key")
-	aesHmac.PersistentFlags().StringP( "object-label", "o", "testkeyobject", "Label of Object to use")
-	aesHmac.PersistentFlags().Bool( "non-ephemeral",  false, "Sets CKA_TOKEN to true")
-	aesHmac.PersistentFlags().String( "message", "FooBar", "Raw message to sign")
-	viper.BindPFlag("aes.keylength", aesHmac.PersistentFlags().Lookup("aes-keylength"))
-	viper.BindPFlag("aes.label", aesHmac.PersistentFlags().Lookup("object-label"))
-	viper.BindPFlag("aes.non-ephemeral", aesHmac.PersistentFlags().Lookup("non-ephemeral"))
-	viper.BindPFlag("aes.message", aesHmac.PersistentFlags().Lookup("message"))
+	ecdsaCmd.PersistentFlags().StringP( "curve", "k", "P224", "Named Curve to Use. (P224, P256, P384, P521)")
+	ecdsaCmd.PersistentFlags().StringP( "object-label", "o", "testkeyobject", "Label of Object to use")
+	ecdsaCmd.PersistentFlags().Bool( "non-ephemeral",  false, "Sets CKA_TOKEN to true")
+	ecdsaCmd.PersistentFlags().String( "message", "FooBar", "Raw message to sign")
+	viper.BindPFlag("ecdsa.curve", ecdsaCmd.PersistentFlags().Lookup("curve"))
+	viper.BindPFlag("ecdsa.label", ecdsaCmd.PersistentFlags().Lookup("object-label"))
+	viper.BindPFlag("ecdsa.non-ephemeral", ecdsaCmd.PersistentFlags().Lookup("non-ephemeral"))
+	viper.BindPFlag("ecdsa.message", ecdsaCmd.PersistentFlags().Lookup("message"))
 
 }
 
 // Prints out the object settings
-func displayAesSettings(keyLabel string, AesKeyLength int, nonEphemeral bool) {
+func displayECDSASettings(keyLabel string, curve string, nonEphemeral bool) {
 	fmt.Printf(
-		"\nObject Settings:\n - type: %s\n - label: %s\n - length: %d\n - nonEphemeral: %t\n",
-		"AES",
+		"\nObject Settings:\n - type: %s\n - label: %s\n - curve: %s\n - nonEphemeral: %t\n",
+		"ECDSA",
 		keyLabel,
-		AesKeyLength,
+		curve,
 		nonEphemeral,
 	)
 }
 
-// Creates an AES key object then tests mechanism CKM_SHA256_HMAC with it
-func CreateAESKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
+// Creates an ECDSA key object then tests mechanism CKM_SHA256_HMAC with it
+func CreateECDSAKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
 
-	// Set aes variables
-	keyLabel := viper.GetString("aes.label")
-	nonEphemeral := viper.GetBool("aes.non-ephemeral")
-	AesKeyLength := viper.GetInt("aes.keylength")
-	messageToSign := viper.GetString("aes.message")
+	// Set ecdsa variables
+	keyLabel := viper.GetString("ecdsa.label")
+	nonEphemeral := viper.GetBool("ecdsa.non-ephemeral")
+	curve := viper.GetString("ecdsa.curve")
+	messageToSign := viper.GetString("ecdsa.message")
 
 	// output the settings
-	displayAesSettings(keyLabel, AesKeyLength, nonEphemeral)
+	displayECDSASettings(keyLabel, curve, nonEphemeral)
 
 	// Get library info
 	pkcs11LibInfo, _ := p.GetInfo()
@@ -94,11 +94,11 @@ func CreateAESKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
 			ExitWithMessage(fmt.Sprintf("found more than 1 key matching the label: %s", ObjLabel), nil)
 		}
 
-		var aesKey pkcs11.ObjectHandle
+		var ecdsaKey pkcs11.ObjectHandle
 		// If there are no keys with this label we should create it...
 		if len(oHs) == 0 && !c.CaseInsensitiveContains(pkcs11LibInfo.ManufacturerID, "ncipher") {
 			fmt.Printf("Key not found with the label: %s. Attempting to create it...\n", ObjLabel)
-			aesKey, err = p11.CreateAesKey(p, session, ObjLabel, AesKeyLength, !nonEphemeral)
+			ecdsaKey, _, err = p11.CreateECDSAKeyPair(p, session, ObjLabel, curve, !nonEphemeral)
 			if err != nil {
 				ExitWithMessage(fmt.Sprintf("Error creating key with label: %s on slot: %s", ObjLabel, pkcs11SlotLabel), err)
 			} else {
@@ -117,32 +117,38 @@ func CreateAESKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
 			)
 		} else {
 			// If we found a key with this label, lets set it to first (and only) one
-			aesKey = oHs[0]
+			ecdsaKey = oHs[0]
 
+			//TODO: add verify function
 			// We need to verify that our key has the correct pkcs11 attributes
-			keyVerified, err := p11.VerifyAesKey(p, session, ObjLabel, AesKeyLength, !nonEphemeral)
-			if err != nil {
-				ExitWithMessage(fmt.Sprintf("finding key with label: %s", ObjLabel), err)
-			}
-
-			if keyVerified {
-				fmt.Printf("Successfully verified key attributes for key labeled: %s\n", ObjLabel)
-			} else {
-				ExitWithMessage(fmt.Sprintf("existing key with label: %s has incorrect attribute(s) set", ObjLabel), nil)
-			}
+			//keyVerified, err := p11.VerifyAesKey(p, session, ObjLabel, AesKeyLength, !nonEphemeral)
+			//if err != nil {
+			//	ExitWithMessage(fmt.Sprintf("finding key with label: %s", ObjLabel), err)
+			//}
+			//
+			//if keyVerified {
+			//	fmt.Printf("Successfully verified key attributes for key labeled: %s\n", ObjLabel)
+			//} else {
+			//	ExitWithMessage(fmt.Sprintf("existing key with label: %s has incorrect attribute(s) set", ObjLabel), nil)
+			//}
 
 		}
 
-		// Test signing with mechanism CKM_SHA256_HMAC
-		testMsg := []byte(messageToSign)
-		hmac, err := p11.SignHmacSha256(p, session, aesKey, testMsg)
+		//TODO: create function for this
+		err = p.SignInit(session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_ECDSA, nil)}, ecdsaKey)
 		if err != nil {
-			ExitWithMessage("Error signing with CKM_SHA256_HMAC", err)
+			ExitWithMessage("Error using CKM_ECDSA with key", err)
 		}
-		fmt.Printf("Successfully tested CKM_SHA256_HMAC on key with label: %s \n MESSAGE: %s\n HMAC: %x\n",
+		// Test signing with mechanism CKM_ECDSA
+		testMsg := []byte(messageToSign)
+		sig, err := p.Sign(session, testMsg)
+		if err != nil {
+			ExitWithMessage("Error signing with key", err)
+		}
+		fmt.Printf("Successfully tested CKM_ECDSA on key with label: %s \n MESSAGE: %s\n SIGNATURE: %x\n",
 			ObjLabel,
 			messageToSign,
-			hmac,
+			sig,
 		)
 	}
 
