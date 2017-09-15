@@ -18,35 +18,47 @@ A simple test utility that can:
   * Initialize a slot: `softhsm2-util --init-token --label someLabel --pin somePin --free --so-pin 1234`
 
 ## Configuration
-Configuration can be applied via file, ENV vars, and CLI arguments. Override order:
-    1. Configuration file (default ./pkcs11-config.yaml)
+Configuration can be applied via file, ENV vars, and CLI arguments. Override order from highest to lowest:
+    1. CLI Arguments (use --help for list)
     2. Environment Variables
-    3. CLI Arguments (use --help for list)
+    3. Configuration file (default ./pkcs11-config.yaml)
+
 
 ### Configuration File
-default ./pkcs11-config.yaml
+default `./pkcs11-config.yaml`
 
-```
+```yaml
+# PKCS11 configuration
 pkcs11:
   library: /usr/lib/softhsm/libsofthsm2.so
-  label: DlbpAdapter
-  pin: securekey
+  label: someLabel
+  pin: somePin
 
+# aes-hmac command options
 aes:
+  # length/size of aes key (16 or 32)
   keylength: 32
+  # message used to test signing against
   message: "Some Important Message"
+  # boolean value of CKA_TOKEN
   non-ephemeral: false
+  # label to use for object
   label: aes_testkey_01
 
+# ecdsa command options
 ecdsa:
+  # EC curve to use (P224, P256, P384, P521)
   curve: P256
+  # message used to test signing against
   message: "Some Important Message"
+  # boolean value of CKA_TOKEN
   non-ephemeral: false
+  # label to use for object
   label: ec_testkey_01
 ```
 
 ### Environment Variables
-the above configuration file can have any of it's values overridden by environment variables that are all in CAPS and with underscores (_) between maps.
+the above configuration file can have any of it's values overridden by environment variables that are all in **CAPS** and with underscores (`_`) between maps.
 Example:
 
 ```
