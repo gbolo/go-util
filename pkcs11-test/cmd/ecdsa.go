@@ -119,18 +119,17 @@ func CreateECDSAKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
 			// If we found a key with this label, lets set it to first (and only) one
 			ecdsaKey = oHs[0]
 
-			//TODO: add verify function
 			// We need to verify that our key has the correct pkcs11 attributes
-			//keyVerified, err := p11.VerifyAesKey(p, session, ObjLabel, AesKeyLength, !nonEphemeral)
-			//if err != nil {
-			//	ExitWithMessage(fmt.Sprintf("finding key with label: %s", ObjLabel), err)
-			//}
-			//
-			//if keyVerified {
-			//	fmt.Printf("Successfully verified key attributes for key labeled: %s\n", ObjLabel)
-			//} else {
-			//	ExitWithMessage(fmt.Sprintf("existing key with label: %s has incorrect attribute(s) set", ObjLabel), nil)
-			//}
+			keyVerified, err := p11.VerifyECDSAKey(p, session, ObjLabel, curve, !nonEphemeral)
+			if err != nil {
+				ExitWithMessage(fmt.Sprintf("finding key with label: %s", ObjLabel), err)
+			}
+
+			if keyVerified {
+				fmt.Printf("Successfully verified key attributes for key labeled: %s\n", ObjLabel)
+			} else {
+				ExitWithMessage(fmt.Sprintf("existing key with label: %s has incorrect attribute(s) set", ObjLabel), nil)
+			}
 
 		}
 
