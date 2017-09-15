@@ -1,17 +1,31 @@
+# configuration file for pkcs11-test
+# https://github.com/gbolo/go-util/tree/master/pkcs11-test
+
+# PKCS11 configuration
 pkcs11:
   library: /usr/lib/softhsm/libsofthsm2.so
   label: someLabel
   pin: somePin
 
+# aes-hmac command options
 aes:
+  # length/size of aes key (16 or 32)
   keylength: 32
+  # message used to test signing against
   message: "Some Important Message"
+  # boolean value of CKA_TOKEN
   non-ephemeral: false
+  # label to use for object
   label: aes_testkey_01
 
+# ecdsa command options
 ecdsa:
+  # EC curve to use (P224, P256, P384, P521)
   curve: P256
+  # message used to test signing against
   message: "Some Important Message"
+  # boolean value of CKA_TOKEN
   non-ephemeral: false
+  # label to use for object
   label: ec_testkey_01
 
