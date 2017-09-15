@@ -24,8 +24,8 @@ func GetECDSAPkcs11Template(objectLabel string, namedCurve string, ephemeral boo
 		pkcs11.NewAttribute(pkcs11.CKA_VERIFY, true),
 		pkcs11.NewAttribute(pkcs11.CKA_EC_PARAMS, ecParam),
 		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, false),
-		pkcs11.NewAttribute(pkcs11.CKA_ID, []byte("PUB-ECDSA-P256")),
-		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "PUB-ECDSA-P256"),
+		pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(objectLabel)),
+		pkcs11.NewAttribute(pkcs11.CKA_LABEL, objectLabel),
 	}
 
 	// spec taken from fabric
@@ -35,8 +35,8 @@ func GetECDSAPkcs11Template(objectLabel string, namedCurve string, ephemeral boo
 		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, !ephemeral), /* session only. destroy later */
 		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, true),
 		pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
-		pkcs11.NewAttribute(pkcs11.CKA_ID, []byte("PRIV-ECDSA-P256")),
-		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "PRIV-ECDSA-P256"),
+		pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(objectLabel)),
+		pkcs11.NewAttribute(pkcs11.CKA_LABEL, objectLabel),
 		pkcs11.NewAttribute(pkcs11.CKA_EXTRACTABLE, false),
 	}
 
@@ -93,6 +93,28 @@ func CreateECDSAKeyPair(p *pkcs11.Ctx, session pkcs11.SessionHandle, objectLabel
 		pubKeyTemplate,
 		privKeyTemplate,
 	)
+
+	return
+}
+
+
+/* This should verify that our key has the correct attributes */
+func VerifyECDSAKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, oLabel string, namedCurve string, ephemeral bool) (verified bool, err error) {
+
+	// get the required attributes for priv key
+	_, privKey_requiredAttributes, err := GetECDSAPkcs11Template(oLabel, namedCurve, ephemeral)
+
+	if err != nil {
+		return
+	}
+
+	// Search for objects which have ALL these attributes
+	oHs, moreThanOne, err := FindObjects(p, session, privKey_requiredAttributes, 1)
+
+	// object is verified if there is exactly 1 match and no errors
+	if len(oHs) == 1 && !moreThanOne && err == nil {
+		verified = true
+	}
 
 	return
 }
