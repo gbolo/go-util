@@ -38,6 +38,8 @@ func GetECDSAPkcs11Template(objectLabel string, namedCurve string, ephemeral boo
 		pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(objectLabel)),
 		pkcs11.NewAttribute(pkcs11.CKA_LABEL, objectLabel),
 		pkcs11.NewAttribute(pkcs11.CKA_EXTRACTABLE, false),
+		// support key derivation by default for now...
+		pkcs11.NewAttribute(pkcs11.CKA_DERIVE, true),
 	}
 
 	fmt.Println("PKCS11 Attributes Required:")
