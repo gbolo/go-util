@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// aesHmac represents the aes command
+// aesImport represents the aes command
 var ecdsaCmd = &cobra.Command{
 	Use:   "ecdsa",
 	Short: "Creates an EC key object then tests mechanism CKM_ECDSA with it",
@@ -149,11 +149,17 @@ func CreateECDSAKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
 			messageToSign,
 			sig,
 		)
+
+
+		fmt.Printf("\n\nDEBUGGING: Public Key Info\n")
+		s, e := p11.GetPublicKey(p, session, ObjLabel)
+		fmt.Printf("s: %s e: %s\n", s, e)
+
+		//Test Encryption
+		//err = p.EncryptInit(session,)
 	}
 
 	// Exit nicely if we reached this point
 	os.Exit(0)
 
 }
-
-

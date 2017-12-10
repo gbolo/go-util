@@ -1,8 +1,12 @@
 package p11
 
 import (
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"encoding/asn1"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/miekg/pkcs11"
 )
@@ -23,9 +27,10 @@ func GetECDSAPkcs11Template(objectLabel string, namedCurve string, ephemeral boo
 		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, !ephemeral), /* session only. destroy later */
 		pkcs11.NewAttribute(pkcs11.CKA_VERIFY, true),
 		pkcs11.NewAttribute(pkcs11.CKA_EC_PARAMS, ecParam),
-		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, false),
 		pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(objectLabel)),
 		pkcs11.NewAttribute(pkcs11.CKA_LABEL, objectLabel),
+		// public key should be easily accessed
+		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, false),
 	}
 
 	// spec taken from fabric
@@ -37,9 +42,11 @@ func GetECDSAPkcs11Template(objectLabel string, namedCurve string, ephemeral boo
 		pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
 		pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(objectLabel)),
 		pkcs11.NewAttribute(pkcs11.CKA_LABEL, objectLabel),
+		// TODO: make these options configurable...
 		pkcs11.NewAttribute(pkcs11.CKA_EXTRACTABLE, false),
 		// support key derivation by default for now...
 		pkcs11.NewAttribute(pkcs11.CKA_DERIVE, true),
+		// pkcs11.NewAttribute(pkcs11.CKR_ATTRIBUTE_SENSITIVE, false),
 	}
 
 	fmt.Println("PKCS11 Attributes Required:")
@@ -99,7 +106,6 @@ func CreateECDSAKeyPair(p *pkcs11.Ctx, session pkcs11.SessionHandle, objectLabel
 	return
 }
 
-
 /* This should verify that our key has the correct attributes */
 func VerifyECDSAKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, oLabel string, namedCurve string, ephemeral bool) (verified bool, err error) {
 
@@ -118,5 +124,98 @@ func VerifyECDSAKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, oLabel string, 
 		verified = true
 	}
 
+	return
+}
+
+/* This should return the public key in PEM format */
+func GetPublicKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, objectLabel string) (pubKeyPem string, err error) {
+
+	// search for the public key
+	pubKeyTemplate := []*pkcs11.Attribute{
+		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKK_EC),
+		pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_PUBLIC_KEY),
+		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, false),
+		pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(objectLabel)),
+		pkcs11.NewAttribute(pkcs11.CKA_LABEL, objectLabel),
+	}
+
+	// Search for objects with this template
+	oHs, moreThanOne, err := FindObjects(p, session,
+		pubKeyTemplate,
+		1,
+	)
+	if err != nil {
+		return
+	}
+
+	// If we got more than 1, we should exit with this information!
+	if moreThanOne {
+		err = fmt.Errorf("more than 1 key found")
+		return
+	}
+
+	// get CKA_VALUE
+	fmt.Println("Found a pub key:", oHs[0])
+	pubKeyHandle := oHs[0]
+	template := []*pkcs11.Attribute{
+		pkcs11.NewAttribute(pkcs11.CKA_EC_PARAMS, nil),
+		pkcs11.NewAttribute(pkcs11.CKA_EC_POINT, nil),
+	}
+	pubKeyAttrValues, err := p.GetAttributeValue(session, pubKeyHandle, template)
+
+	if err != nil {
+		return
+	}
+
+	// according to: http://docs.oasis-open.org/pkcs11/pkcs11-curr/v2.40/csprd02/pkcs11-curr-v2.40-csprd02.html#_Toc387327769
+	// DER-encoding of an ANSI X9.62 Parameters value
+	fmt.Println("CKA_EC_PARAMS:", pubKeyAttrValues[0].Value)
+	// DER-encoding of ANSI X9.62 ECPoint value Q
+	fmt.Println("CKA_EC_POINT:", pubKeyAttrValues[1].Value)
+
+	err = ioutil.WriteFile("ecpoint.der", pubKeyAttrValues[1].Value, 0644)
+	if err != nil {
+		panic(err)
+	}
+
+	var ecp []byte
+	_, err1 := asn1.Unmarshal(pubKeyAttrValues[1].Value, &ecp)
+	if err1 != nil {
+		fmt.Printf("Failed to decode ASN.1 encoded CKA_EC_POINT (%s)", err1.Error())
+	}
+	fmt.Println("ecp:", ecp)
+
+	pubKey, err := getPublic(ecp)
+	if err != nil {
+		fmt.Printf("Failed to decode public key (%s)", err.Error())
+		return
+	}
+
+	fmt.Printf("Public key: %#v", pubKey)
+
+	pubKeyPem = ""
+	return
+}
+
+func getPublic(point []byte) (pub crypto.PublicKey, err error) {
+	var ecdsaPub ecdsa.PublicKey
+
+	ecdsaPub.Curve = elliptic.P256()
+	pointLenght := ecdsaPub.Curve.Params().BitSize/8*2 + 1
+	if len(point) != pointLenght {
+		err = fmt.Errorf("CKA_EC_POINT (%d) does not fit used curve (%d)", len(point), pointLenght)
+		return
+	}
+	ecdsaPub.X, ecdsaPub.Y = elliptic.Unmarshal(ecdsaPub.Curve, point[:pointLenght])
+	if ecdsaPub.X == nil {
+		err = fmt.Errorf("Failed to decode CKA_EC_POINT")
+		return
+	}
+	if !ecdsaPub.Curve.IsOnCurve(ecdsaPub.X, ecdsaPub.Y) {
+		err = fmt.Errorf("Public key is not on Curve")
+		return
+	}
+
+	pub = &ecdsaPub
 	return
 }

@@ -6,6 +6,8 @@ import (
 	"github.com/miekg/pkcs11"
 	c "github.com/gbolo/go-util/lib/common"
 	"fmt"
+	"strings"
+	"encoding/hex"
 )
 
 /* return a set of attributes that we require for our aes key */
@@ -137,6 +139,56 @@ func SignHmacSha256(p *pkcs11.Ctx, session pkcs11.SessionHandle, o pkcs11.Object
 	if err != nil {
 		return
 	}
+
+	return
+}
+
+func getBytes(input string) ([]byte, bool) {
+	var result []byte
+	isHex := false
+	if strings.HasPrefix(input, "0x") {
+		d, err := hex.DecodeString(input[2:])
+		if err != nil {
+			panic(err)
+		}
+		result = d
+		isHex = true
+	} else {
+		result = []byte(input)
+	}
+	return result, isHex
+}
+
+
+func ImportAesKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, objectLabel string, ephemeral bool, hexKey string) (aesKey pkcs11.ObjectHandle, err error) {
+
+	// for now, lets only support softhsm for this operation
+	pkcs11LibInfo, err := p.GetInfo()
+	if err != nil {
+		return
+	}
+
+	if !c.CaseInsensitiveContains(pkcs11LibInfo.ManufacturerID, "SoftHSM") {
+		err = fmt.Errorf("only SoftHSM is supported for key import")
+		return
+	}
+
+	// now we can try to import the key
+	b, isHex := getBytes(hexKey)
+	if !isHex {
+		err = fmt.Errorf("value provided for key is not hex: %s", hexKey)
+		return
+	}
+	aesKey, err = p.CreateObject(session,
+		[]*pkcs11.Attribute{
+			pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_SECRET_KEY),
+			pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKK_AES),
+			pkcs11.NewAttribute(pkcs11.CKA_TOKEN, !ephemeral),
+			pkcs11.NewAttribute(pkcs11.CKA_LABEL, objectLabel),
+			pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
+			//pkcs11.NewAttribute(pkcs11.CKA_VERIFY, true),
+			pkcs11.NewAttribute(pkcs11.CKA_VALUE, b),
+		})
 
 	return
 }

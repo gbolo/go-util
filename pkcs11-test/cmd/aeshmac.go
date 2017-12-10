@@ -38,10 +38,12 @@ func init() {
 	aesHmac.PersistentFlags().IntP( "aes-keylength", "k", 32, "Length of AES Key")
 	aesHmac.PersistentFlags().StringP( "object-label", "o", "testkeyobject", "Label of Object to use")
 	aesHmac.PersistentFlags().Bool( "non-ephemeral",  false, "Sets CKA_TOKEN to true")
+	aesHmac.PersistentFlags().Bool( "skip-verify",  false, "Skips verification of pkcs11 object attributes")
 	aesHmac.PersistentFlags().String( "message", "FooBar", "Raw message to sign")
 	viper.BindPFlag("aes.keylength", aesHmac.PersistentFlags().Lookup("aes-keylength"))
 	viper.BindPFlag("aes.label", aesHmac.PersistentFlags().Lookup("object-label"))
 	viper.BindPFlag("aes.non-ephemeral", aesHmac.PersistentFlags().Lookup("non-ephemeral"))
+	viper.BindPFlag("aes.skip-verify", aesHmac.PersistentFlags().Lookup("skip-verify"))
 	viper.BindPFlag("aes.message", aesHmac.PersistentFlags().Lookup("message"))
 
 }
@@ -63,6 +65,7 @@ func CreateAESKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
 	// Set aes variables
 	keyLabel := viper.GetString("aes.label")
 	nonEphemeral := viper.GetBool("aes.non-ephemeral")
+	skipVerify := viper.GetBool("aes.skip-verify")
 	AesKeyLength := viper.GetInt("aes.keylength")
 	messageToSign := viper.GetString("aes.message")
 
@@ -125,7 +128,9 @@ func CreateAESKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
 				ExitWithMessage(fmt.Sprintf("finding key with label: %s", ObjLabel), err)
 			}
 
-			if keyVerified {
+			if skipVerify {
+				fmt.Println("!! Skipping verification of pkcs11 attributes !!")
+			} else if keyVerified {
 				fmt.Printf("Successfully verified key attributes for key labeled: %s\n", ObjLabel)
 			} else {
 				ExitWithMessage(fmt.Sprintf("existing key with label: %s has incorrect attribute(s) set", ObjLabel), nil)

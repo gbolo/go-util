@@ -17,6 +17,8 @@ aes:
   non-ephemeral: false
   # label to use for object
   label: aes_testkey_01
+  # this is used only for importing a key
+  hexvalue: 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
 
 # ecdsa command options
 ecdsa:
