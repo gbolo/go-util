@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/miekg/pkcs11"
-	"github.com/gbolo/go-util/lib/crypto/p11"
+	"github.com/gbolo/go-util/pkcs11-test/p11"
 	"github.com/spf13/viper"
 )
 
