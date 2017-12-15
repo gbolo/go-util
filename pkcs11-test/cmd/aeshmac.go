@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-	"github.com/miekg/pkcs11"
-	"github.com/gbolo/go-util/pkcs11-test/p11"
 	c "github.com/gbolo/go-util/lib/common"
+	"github.com/gbolo/go-util/pkcs11-test/p11"
+	"github.com/miekg/pkcs11"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -16,7 +16,7 @@ import (
 var aesHmac = &cobra.Command{
 	Use:   "aes-hmac",
 	Short: "Creates an AES key object then tests mechanism CKM_SHA256_HMAC with it",
-	Long: `Creates an AES key object then tests mechanism CKM_SHA256_HMAC with it`,
+	Long:  `Creates an AES key object then tests mechanism CKM_SHA256_HMAC with it`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		setGlobalFlagValues()
@@ -31,15 +31,14 @@ var aesHmac = &cobra.Command{
 	},
 }
 
-
 func init() {
 	RootCmd.AddCommand(aesHmac)
 
-	aesHmac.PersistentFlags().IntP( "aes-keylength", "k", 32, "Length of AES Key")
-	aesHmac.PersistentFlags().StringP( "object-label", "o", "testkeyobject", "Label of Object to use")
-	aesHmac.PersistentFlags().Bool( "non-ephemeral",  false, "Sets CKA_TOKEN to true")
-	aesHmac.PersistentFlags().Bool( "skip-verify",  false, "Skips verification of pkcs11 object attributes")
-	aesHmac.PersistentFlags().String( "message", "FooBar", "Raw message to sign")
+	aesHmac.PersistentFlags().IntP("aes-keylength", "k", 32, "Length of AES Key")
+	aesHmac.PersistentFlags().StringP("object-label", "o", "testkeyobject", "Label of Object to use")
+	aesHmac.PersistentFlags().Bool("non-ephemeral", false, "Sets CKA_TOKEN to true")
+	aesHmac.PersistentFlags().Bool("skip-verify", false, "Skips verification of pkcs11 object attributes")
+	aesHmac.PersistentFlags().String("message", "FooBar", "Raw message to sign")
 	viper.BindPFlag("aes.keylength", aesHmac.PersistentFlags().Lookup("aes-keylength"))
 	viper.BindPFlag("aes.label", aesHmac.PersistentFlags().Lookup("object-label"))
 	viper.BindPFlag("aes.non-ephemeral", aesHmac.PersistentFlags().Lookup("non-ephemeral"))
@@ -155,5 +154,3 @@ func CreateAESKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
 	os.Exit(0)
 
 }
-
-

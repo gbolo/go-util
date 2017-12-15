@@ -36,9 +36,9 @@ func init() {
 
 	// Global Flags
 	RootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "optional config file (default is ./pkcs11-config.yaml)")
-	RootCmd.PersistentFlags().StringP( "library", "m", "", "Location of PKCS11 Library")
-	RootCmd.PersistentFlags().StringP( "pin", "p", "", "PIN Required for Login to Slot")
-	RootCmd.PersistentFlags().StringP( "label", "l", "", "Label of Slot to Use")
+	RootCmd.PersistentFlags().StringP("library", "m", "", "Location of PKCS11 Library")
+	RootCmd.PersistentFlags().StringP("pin", "p", "", "PIN Required for Login to Slot")
+	RootCmd.PersistentFlags().StringP("label", "l", "", "Label of Slot to Use")
 	viper.BindPFlag("pkcs11.library", RootCmd.PersistentFlags().Lookup("library"))
 	viper.BindPFlag("pkcs11.pin", RootCmd.PersistentFlags().Lookup("pin"))
 	viper.BindPFlag("pkcs11.label", RootCmd.PersistentFlags().Lookup("label"))

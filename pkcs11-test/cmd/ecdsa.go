@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-	"github.com/miekg/pkcs11"
-	"github.com/gbolo/go-util/pkcs11-test/p11"
 	c "github.com/gbolo/go-util/lib/common"
+	"github.com/gbolo/go-util/pkcs11-test/p11"
+	"github.com/miekg/pkcs11"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -16,7 +16,7 @@ import (
 var ecdsaCmd = &cobra.Command{
 	Use:   "ecdsa",
 	Short: "Creates an EC key object then tests mechanism CKM_ECDSA with it",
-	Long: `Creates an EC key object then tests mechanism CKM_ECDSA with it`,
+	Long:  `Creates an EC key object then tests mechanism CKM_ECDSA with it`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		setGlobalFlagValues()
@@ -31,14 +31,13 @@ var ecdsaCmd = &cobra.Command{
 	},
 }
 
-
 func init() {
 	RootCmd.AddCommand(ecdsaCmd)
 
-	ecdsaCmd.PersistentFlags().StringP( "curve", "k", "P224", "Named Curve to Use. (P224, P256, P384, P521)")
-	ecdsaCmd.PersistentFlags().StringP( "object-label", "o", "testkeyobject", "Label of Object to use")
-	ecdsaCmd.PersistentFlags().Bool( "non-ephemeral",  false, "Sets CKA_TOKEN to true")
-	ecdsaCmd.PersistentFlags().String( "message", "FooBar", "Raw message to sign")
+	ecdsaCmd.PersistentFlags().StringP("curve", "k", "P224", "Named Curve to Use. (P224, P256, P384, P521)")
+	ecdsaCmd.PersistentFlags().StringP("object-label", "o", "testkeyobject", "Label of Object to use")
+	ecdsaCmd.PersistentFlags().Bool("non-ephemeral", false, "Sets CKA_TOKEN to true")
+	ecdsaCmd.PersistentFlags().String("message", "FooBar", "Raw message to sign")
 	viper.BindPFlag("ecdsa.curve", ecdsaCmd.PersistentFlags().Lookup("curve"))
 	viper.BindPFlag("ecdsa.label", ecdsaCmd.PersistentFlags().Lookup("object-label"))
 	viper.BindPFlag("ecdsa.non-ephemeral", ecdsaCmd.PersistentFlags().Lookup("non-ephemeral"))
@@ -149,7 +148,6 @@ func CreateECDSAKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
 			messageToSign,
 			sig,
 		)
-
 
 		fmt.Printf("\n\nDEBUGGING: Public Key Info\n")
 		s, e := p11.GetPublicKey(p, session, ObjLabel)

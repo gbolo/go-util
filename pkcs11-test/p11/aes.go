@@ -3,11 +3,11 @@ package p11
 import (
 	"os"
 
-	"github.com/miekg/pkcs11"
-	c "github.com/gbolo/go-util/lib/common"
-	"fmt"
-	"strings"
 	"encoding/hex"
+	"fmt"
+	c "github.com/gbolo/go-util/lib/common"
+	"github.com/miekg/pkcs11"
+	"strings"
 )
 
 /* return a set of attributes that we require for our aes key */
@@ -41,13 +41,12 @@ func GetAesPkcs11Template(objectLabel string, AesKeyLength int, pkcs11LibInfo pk
 	AesPkcs11Template = []*pkcs11.Attribute{
 		// common to all
 		pkcs11.NewAttribute(pkcs11.CKA_LABEL, objectLabel),      /* Name of Key */
-		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, !ephemeral),             /* This key should persist */
+		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, !ephemeral),       /* This key should persist */
 		pkcs11.NewAttribute(pkcs11.CKA_VALUE_LEN, AesKeyLength), /* KeyLength */
 		pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
 		// vendor specific override
 		pkcs11_keytype,
 	}
-
 
 	fmt.Println("PKCS11 Attributes Required:")
 	fmt.Println(" - CKA_KEY_TYPE:", HR_keytype)
@@ -158,7 +157,6 @@ func getBytes(input string) ([]byte, bool) {
 	}
 	return result, isHex
 }
-
 
 func ImportAesKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, objectLabel string, ephemeral bool, hexKey string) (aesKey pkcs11.ObjectHandle, err error) {
 

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-	"github.com/miekg/pkcs11"
 	"github.com/gbolo/go-util/pkcs11-test/p11"
+	"github.com/miekg/pkcs11"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -14,7 +14,7 @@ import (
 var aesImport = &cobra.Command{
 	Use:   "aes-import",
 	Short: "Import an AES key in HexString format",
-	Long: `Import an AES key in HexString format`,
+	Long:  `Import an AES key in HexString format`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		setGlobalFlagValues()
@@ -29,13 +29,12 @@ var aesImport = &cobra.Command{
 	},
 }
 
-
 func init() {
 	RootCmd.AddCommand(aesImport)
 
-	aesImport.PersistentFlags().StringP( "object-label", "o", "testkeyobject", "Label of Object to import")
-	aesImport.PersistentFlags().Bool( "non-ephemeral",  false, "Sets CKA_TOKEN to true")
-	aesImport.PersistentFlags().StringP( "hex-value", "x", "", "Hex value of key to import")
+	aesImport.PersistentFlags().StringP("object-label", "o", "testkeyobject", "Label of Object to import")
+	aesImport.PersistentFlags().Bool("non-ephemeral", false, "Sets CKA_TOKEN to true")
+	aesImport.PersistentFlags().StringP("hex-value", "x", "", "Hex value of key to import")
 	viper.BindPFlag("aes.label", aesImport.PersistentFlags().Lookup("object-label"))
 	viper.BindPFlag("aes.non-ephemeral", aesImport.PersistentFlags().Lookup("non-ephemeral"))
 	viper.BindPFlag("aes.hexvalue", aesImport.PersistentFlags().Lookup("hex-value"))
@@ -67,5 +66,3 @@ func ImportAESKey(p *pkcs11.Ctx, session pkcs11.SessionHandle, sindex int) {
 	os.Exit(0)
 
 }
-
-
