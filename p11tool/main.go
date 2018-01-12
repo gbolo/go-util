@@ -21,6 +21,7 @@ func exitWhenError(err error) {
 func main() {
 
 	// get flags
+	pkcs11Library := flag.String("lib", "/usr/lib/softhsm/libsofthsm2.so", "Location of pkcs11 library")
 	slotLabel := flag.String("slot", "ForFabric", "Slot Label")
 	slotPin := flag.String("pin", "98765432", "Slot PIN")
 	action := flag.String("action", "list", "list,import")
@@ -31,7 +32,7 @@ func main() {
 	// initialize pkcs11
 	p11w := pw.Pkcs11Wrapper{
 		Library: pw.Pkcs11Library{
-			Path: "/usr/lib/softhsm/libsofthsm2.so",
+			Path: *pkcs11Library,
 		},
 		SlotLabel: *slotLabel,
 		SlotPin: *slotPin,
