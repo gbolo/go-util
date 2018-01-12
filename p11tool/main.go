@@ -1,0 +1,72 @@
+package main
+
+import (
+
+	pw "github.com/gbolo/go-util/p11tool/pkcs11wrapper"
+	//de "github.com/gbolo/go-util/lib/debugging"
+	"github.com/miekg/pkcs11"
+	"fmt"
+	"os"
+	"flag"
+)
+
+
+func exitWhenError(err error) {
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+}
+
+func main() {
+
+	// get flags
+	slotLabel := flag.String("slot", "ForFabric", "Slot Label")
+	slotPin := flag.String("pin", "98765432", "Slot PIN")
+	action := flag.String("action", "list", "list,import")
+	keyFile := flag.String("keyFile", "/some/dir/key.pem", "path to key you want to import")
+
+	flag.Parse()
+
+	// initialize pkcs11
+	p11w := pw.Pkcs11Wrapper{
+		Library: pw.Pkcs11Library{
+			Path: "/usr/lib/softhsm/libsofthsm2.so",
+		},
+		SlotLabel: *slotLabel,
+		SlotPin: *slotPin,
+	}
+
+	err := p11w.InitContext()
+	exitWhenError(err)
+
+	err = p11w.InitSession()
+	exitWhenError(err)
+
+	err = p11w.Login()
+	exitWhenError(err)
+
+	// defer cleanup
+	defer p11w.Context.Destroy()
+	defer p11w.Context.Finalize()
+	defer p11w.Context.CloseSession(p11w.Session)
+	defer p11w.Context.Logout(p11w.Session)
+
+	// complete actions
+	if *action == "list" {
+
+		p11w.ListObjects(
+			[]*pkcs11.Attribute{},
+			50,
+		)
+
+	}
+
+	if *action == "import" {
+
+		err = p11w.ImportECKey(*keyFile)
+		exitWhenError(err)
+
+	}
+
+}
