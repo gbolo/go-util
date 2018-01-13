@@ -224,11 +224,10 @@ func DecodeCKACLASS(b byte) string {
 
 }
 
-func (p11w *Pkcs11Wrapper) ImportECKey(file string) (err error) {
+func (p11w *Pkcs11Wrapper) ImportECKey(ec EcdsaKey) (err error) {
 
-	ec := EcdsaKey{}
-	err = ec.ImportPrivKeyFromFile(file)
-	if err != nil {
+	if ec.PrivKey == nil {
+		err = errors.New("No key to import!")
 		return
 	}
 
@@ -284,6 +283,22 @@ func (p11w *Pkcs11Wrapper) ImportECKey(file string) (err error) {
 	if err == nil {
 		fmt.Printf("Object was imported with CKA_LABEL:%s CKA_ID:%x\n", "BCPRV1", ec.SKI.Sha256Bytes)
 	}
+	return
+
+}
+
+func (p11w *Pkcs11Wrapper) ImportECKeyFromFile(file string) (err error) {
+
+	// read in key from file
+	ec := EcdsaKey{}
+	err = ec.ImportPrivKeyFromFile(file)
+	if err != nil {
+		return
+	}
+
+	// import key to hsm
+	err = p11w.ImportECKey(ec)
+
 	return
 
 }
