@@ -11,6 +11,7 @@ import (
 	"crypto/elliptic"
 	//"encoding/hex"
 	//"encoding/asn1"
+
 )
 
 type Pkcs11Library struct {
@@ -233,8 +234,7 @@ func (p11w *Pkcs11Wrapper) ImportECKey(file string) (err error) {
 
 	ec.GenSKI()
 
-	//marshaledOID, err := asn1.Marshal(ec.PrivKey.Curve)
-	marshaledOID, err := GetECParamMarshaled("P256")
+	marshaledOID, err := GetECParamMarshaled(ec.PrivKey.Params().Name)
 	if err != nil {
 		return
 	}
@@ -251,7 +251,7 @@ func (p11w *Pkcs11Wrapper) ImportECKey(file string) (err error) {
 		pkcs11.NewAttribute(pkcs11.CKA_VERIFY, true),
 		pkcs11.NewAttribute(pkcs11.CKA_EC_PARAMS, marshaledOID),
 
-		pkcs11.NewAttribute(pkcs11.CKA_ID, ec.SKIsha256Bytes),
+		pkcs11.NewAttribute(pkcs11.CKA_ID, ec.SKI.Sha256Bytes),
 		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "BCPUB1"),
 		pkcs11.NewAttribute(pkcs11.CKA_EC_POINT, ecPt),
 		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, false),
@@ -261,7 +261,7 @@ func (p11w *Pkcs11Wrapper) ImportECKey(file string) (err error) {
 	if err != nil {
 		return
 	} else {
-		fmt.Printf("Object was imported with CKA_LABEL:%s CKA_ID:%x\n", "BCPUB1", ec.SKIsha256Bytes)
+		fmt.Printf("Object was imported with CKA_LABEL:%s CKA_ID:%x\n", "BCPUB1", ec.SKI.Sha256Bytes)
 	}
 
 	keyTemplate = []*pkcs11.Attribute{
@@ -272,7 +272,7 @@ func (p11w *Pkcs11Wrapper) ImportECKey(file string) (err error) {
 		pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
 		pkcs11.NewAttribute(pkcs11.CKA_EC_PARAMS, marshaledOID),
 
-		pkcs11.NewAttribute(pkcs11.CKA_ID, ec.SKIsha256Bytes),
+		pkcs11.NewAttribute(pkcs11.CKA_ID, ec.SKI.Sha256Bytes),
 		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "BCPRV1"),
 		pkcs11.NewAttribute(pkcs11.CKR_ATTRIBUTE_SENSITIVE, false),
 		pkcs11.NewAttribute(pkcs11.CKA_EXTRACTABLE, true),
@@ -282,7 +282,7 @@ func (p11w *Pkcs11Wrapper) ImportECKey(file string) (err error) {
 
 	_, err = p11w.Context.CreateObject(p11w.Session, keyTemplate)
 	if err == nil {
-		fmt.Printf("Object was imported with CKA_LABEL:%s CKA_ID:%x\n", "BCPRV1", ec.SKIsha256Bytes)
+		fmt.Printf("Object was imported with CKA_LABEL:%s CKA_ID:%x\n", "BCPRV1", ec.SKI.Sha256Bytes)
 	}
 	return
 

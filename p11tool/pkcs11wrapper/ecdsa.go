@@ -15,12 +15,18 @@ import (
 )
 
 type EcdsaKey struct {
+
 	PubKey *ecdsa.PublicKey
 	PrivKey *ecdsa.PrivateKey
-	SKIsha256 string
-	SKIsha1 string
-	SKIsha256Bytes []byte
-	SKIsha1Bytes []byte
+	SKI	SubjectKeyIdentifier
+}
+
+type SubjectKeyIdentifier struct {
+
+	Sha1	string
+	Sha1Bytes []byte
+	Sha256	string
+	Sha256Bytes	[]byte
 }
 
 // SKI returns the subject key identifier of this key.
@@ -35,20 +41,34 @@ func (k *EcdsaKey) GenSKI() (ski []byte) {
 	// Hash it
 	hash := sha256.New()
 	hash.Write(raw)
-	k.SKIsha256Bytes = hash.Sum(nil)
-	k.SKIsha256 = hex.EncodeToString(hash.Sum(nil))
+	k.SKI.Sha256Bytes = hash.Sum(nil)
+	k.SKI.Sha256 = hex.EncodeToString(k.SKI.Sha256Bytes)
 
 	hash = sha1.New()
 	hash.Write(raw)
-	k.SKIsha1Bytes = hash.Sum(nil)
-	k.SKIsha1 = hex.EncodeToString(hash.Sum(nil))
+	k.SKI.Sha1Bytes = hash.Sum(nil)
+	k.SKI.Sha1 = hex.EncodeToString(k.SKI.Sha1Bytes)
 
 	return
 }
 
-func (k *EcdsaKey) Generate() (err error) {
+func (k *EcdsaKey) Generate(namedCurve string) (err error) {
 
-	k.PrivKey, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	// generate private key
+	switch namedCurve {
+	case "P-224":
+		k.PrivKey, err = ecdsa.GenerateKey(elliptic.P224(), rand.Reader)
+	case "P-256":
+		k.PrivKey, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	case "P-384":
+		k.PrivKey, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	case "P-521":
+		k.PrivKey, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	default:
+		k.PrivKey, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	}
+
+	// store public key
 	k.PubKey = &k.PrivKey.PublicKey
 
 	return
@@ -101,13 +121,13 @@ func GetECParamMarshaled(namedCurve string) (ecParamMarshaled []byte, err error)
 	ecParamOID := asn1.ObjectIdentifier{}
 
 	switch namedCurve {
-	case "P224":
+	case "P-224":
 		ecParamOID = asn1.ObjectIdentifier{1, 3, 132, 0, 33}
-	case "P256":
+	case "P-256":
 		ecParamOID = asn1.ObjectIdentifier{1, 2, 840, 10045, 3, 1, 7}
-	case "P384":
+	case "P-384":
 		ecParamOID = asn1.ObjectIdentifier{1, 3, 132, 0, 34}
-	case "P521":
+	case "P-521":
 		ecParamOID = asn1.ObjectIdentifier{1, 3, 132, 0, 35}
 	}
 
