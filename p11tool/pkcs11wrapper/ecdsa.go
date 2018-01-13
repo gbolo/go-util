@@ -1,32 +1,30 @@
 package pkcs11wrapper
 
 import (
-	"crypto/elliptic"
-	"crypto/sha256"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/x509"
-	"io/ioutil"
-	"encoding/pem"
-	"encoding/hex"
 	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/x509"
 	"encoding/asn1"
+	"encoding/hex"
+	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 )
 
 type EcdsaKey struct {
-
-	PubKey *ecdsa.PublicKey
+	PubKey  *ecdsa.PublicKey
 	PrivKey *ecdsa.PrivateKey
-	SKI	SubjectKeyIdentifier
+	SKI     SubjectKeyIdentifier
 }
 
 type SubjectKeyIdentifier struct {
-
-	Sha1	string
-	Sha1Bytes []byte
-	Sha256	string
-	Sha256Bytes	[]byte
+	Sha1        string
+	Sha1Bytes   []byte
+	Sha256      string
+	Sha256Bytes []byte
 }
 
 // SKI returns the subject key identifier of this key.
@@ -139,4 +137,3 @@ func GetECParamMarshaled(namedCurve string) (ecParamMarshaled []byte, err error)
 	ecParamMarshaled, err = asn1.Marshal(ecParamOID)
 	return
 }
-

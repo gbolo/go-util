@@ -1,24 +1,18 @@
 package pkcs11wrapper
 
 import (
+	"crypto/elliptic"
 	"errors"
 	"fmt"
 	"os"
 
 	"github.com/miekg/pkcs11"
 	"github.com/olekukonko/tablewriter"
-	//"encoding/asn1"
-	"crypto/elliptic"
-	//"encoding/hex"
-	//"encoding/asn1"
-
 )
 
 type Pkcs11Library struct {
-
 	Path string
 	Info pkcs11.Info
-
 }
 
 type Pkcs11Wrapper struct {
@@ -29,23 +23,20 @@ type Pkcs11Wrapper struct {
 
 	// Session Handler
 	SlotLabel string
-	Session pkcs11.SessionHandle
+	Session   pkcs11.SessionHandle
 
 	// Optional Slot Login
 	SlotPin string
-
 }
 
 type Pkcs11Object struct {
-
 	ObjectHandle pkcs11.ObjectHandle
 
 	// Some human readable attributes
-	Count string
+	Count     string
 	CKA_CLASS string
 	CKA_LABEL string
-	CKA_ID string
-
+	CKA_ID    string
 }
 
 // Initialize pkcs11 context
@@ -121,7 +112,6 @@ func (p11w *Pkcs11Wrapper) FindObjects(template []*pkcs11.Attribute, max int) (p
 	return
 }
 
-
 /* Return the slotID of token label */
 func FindSlotByLabel(p *pkcs11.Ctx, slotLabel string) (slot uint, index int, err error) {
 
@@ -172,7 +162,7 @@ func (p11w *Pkcs11Wrapper) ListObjects(template []*pkcs11.Attribute, max int) {
 		// prepare table headers
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetHeader([]string{"COUNT", "CKA_CLASS", "CKA_LABEL", "CKA_ID"})
-		table.SetCaption(true, fmt.Sprintf("Total objects found (max %d): %d",max, len(objects)))
+		table.SetCaption(true, fmt.Sprintf("Total objects found (max %d): %d", max, len(objects)))
 
 		// populate table data
 		for i, k := range objects {
@@ -208,18 +198,18 @@ func (p11w *Pkcs11Wrapper) ListObjects(template []*pkcs11.Attribute, max int) {
 func DecodeCKACLASS(b byte) string {
 
 	switch b {
-		case 0:
-			return "CKO_DATA"
-		case 1:
-			return "CKO_CERTIFICATE"
-		case 2:
-			return "CKO_PUBLIC_KEY"
-		case 3:
-			return "CKO_PRIVATE_KEY"
-		case 4:
-			return "CKO_SECRET_KEY"
-		default:
-			return "UNKNOWN"
+	case 0:
+		return "CKO_DATA"
+	case 1:
+		return "CKO_CERTIFICATE"
+	case 2:
+		return "CKO_PUBLIC_KEY"
+	case 3:
+		return "CKO_PRIVATE_KEY"
+	case 4:
+		return "CKO_SECRET_KEY"
+	default:
+		return "UNKNOWN"
 	}
 
 }
