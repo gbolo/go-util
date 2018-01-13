@@ -2,6 +2,8 @@ package pkcs11wrapper
 
 import (
 	"crypto/elliptic"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -217,7 +219,7 @@ func DecodeCKACLASS(b byte) string {
 func (p11w *Pkcs11Wrapper) ImportECKey(ec EcdsaKey) (err error) {
 
 	if ec.PrivKey == nil {
-		err = errors.New("No key to import!")
+		err = errors.New("no key to import")
 		return
 	}
 
@@ -291,4 +293,54 @@ func (p11w *Pkcs11Wrapper) ImportECKeyFromFile(file string) (err error) {
 
 	return
 
+}
+
+func (p11w *Pkcs11Wrapper) SignMessage(message string, key pkcs11.ObjectHandle) (signature string, err error) {
+
+	err = p11w.Context.SignInit(p11w.Session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_ECDSA, nil)}, key)
+	if err != nil {
+		return
+	}
+
+	// Test signing with mechanism CKM_ECDSA
+	// Hash message first
+	// TODO: make this hash dynamic corresponding to key size
+	d := sha256.Sum256([]byte(message))
+	digest := d[:]
+	signatureBytes, err := p11w.Context.Sign(p11w.Session, digest)
+	if err != nil {
+		return
+	}
+
+	signature = hex.EncodeToString(signatureBytes)
+
+	return
+}
+
+func (p11w *Pkcs11Wrapper) VerifySignature(message string, signature string, key pkcs11.ObjectHandle) (verified bool, err error) {
+
+	err = p11w.Context.VerifyInit(p11w.Session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_ECDSA, nil)}, key)
+	if err != nil {
+		return
+	}
+
+	// Test signing with mechanism CKM_ECDSA
+	// Hash message first
+	// TODO: make this hash dynamic corresponding to key size
+	d := sha256.Sum256([]byte(message))
+	digest := d[:]
+
+	signatureBytes, err := hex.DecodeString(signature)
+	if err != nil {
+		return
+	}
+
+	// if there is an error, we can assume signature was invalid:
+	// Error: pkcs11: 0xC0: CKR_SIGNATURE_INVALID
+	errSig := p11w.Context.Verify(p11w.Session, digest, signatureBytes)
+	if errSig == nil {
+		verified = true
+	}
+
+	return
 }
