@@ -1,15 +1,13 @@
 package main
 
 import (
-
 	pw "github.com/gbolo/go-util/p11tool/pkcs11wrapper"
 	//de "github.com/gbolo/go-util/lib/debugging"
-	"github.com/miekg/pkcs11"
-	"fmt"
-	"os"
 	"flag"
+	"fmt"
+	"github.com/miekg/pkcs11"
+	"os"
 )
-
 
 func exitWhenError(err error) {
 	if err != nil {
@@ -35,7 +33,7 @@ func main() {
 			Path: *pkcs11Library,
 		},
 		SlotLabel: *slotLabel,
-		SlotPin: *slotPin,
+		SlotPin:   *slotPin,
 	}
 
 	err := p11w.InitContext()
@@ -54,19 +52,22 @@ func main() {
 	defer p11w.Context.Logout(p11w.Session)
 
 	// complete actions
-	if *action == "list" {
+	switch *action {
 
+	case "import":
+		err = p11w.ImportECKeyFromFile(*keyFile)
+		exitWhenError(err)
+
+	case "generate":
+		ec := pw.EcdsaKey{}
+		ec.Generate("P-256")
+		p11w.ImportECKey(ec)
+
+	default:
 		p11w.ListObjects(
 			[]*pkcs11.Attribute{},
 			50,
 		)
-
-	}
-
-	if *action == "import" {
-
-		err = p11w.ImportECKey(*keyFile)
-		exitWhenError(err)
 
 	}
 
