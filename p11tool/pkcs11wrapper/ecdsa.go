@@ -6,12 +6,14 @@ import (
 	"crypto/rand"
 	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/sha512"
 	"crypto/x509"
 	"encoding/asn1"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 )
 
 type EcdsaKey struct {
@@ -116,6 +118,23 @@ func (k *EcdsaKey) ImportPrivKeyFromFile(file string) (err error) {
 /* returns value for CKA_EC_PARAMS */
 func GetECParamMarshaled(namedCurve string) (ecParamMarshaled []byte, err error) {
 
+	// RFC 5480, 2.1.1.1. Named Curve
+	//
+	// secp224r1 OBJECT IDENTIFIER ::= {
+	//   iso(1) identified-organization(3) certicom(132) curve(0) 33 }
+	//
+	// secp256r1 OBJECT IDENTIFIER ::= {
+	//   iso(1) member-body(2) us(840) ansi-X9-62(10045) curves(3)
+	//   prime(1) 7 }
+	//
+	// secp384r1 OBJECT IDENTIFIER ::= {
+	//   iso(1) identified-organization(3) certicom(132) curve(0) 34 }
+	//
+	// secp521r1 OBJECT IDENTIFIER ::= {
+	//   iso(1) identified-organization(3) certicom(132) curve(0) 35 }
+	//
+	// NB: secp256r1 is equivalent to prime256v1
+
 	ecParamOID := asn1.ObjectIdentifier{}
 
 	switch namedCurve {
@@ -135,5 +154,106 @@ func GetECParamMarshaled(namedCurve string) (ecParamMarshaled []byte, err error)
 	}
 
 	ecParamMarshaled, err = asn1.Marshal(ecParamOID)
+	return
+}
+
+func (k *EcdsaKey) SignMessage(message string) (signature string, err error) {
+
+	// we should always hash the message before signing it
+	// TODO: make hash function configurable or detected by key size:
+	// https://www.ietf.org/rfc/rfc4754.txt
+	// https://tools.ietf.org/html/rfc5656#section-6.2.1
+	//  +----------------+----------------+
+	//  |   Curve Size   | Hash Algorithm |
+	//	+----------------+----------------+
+	//  |    b <= 256    |     SHA-256    |
+	//  |                |                |
+	//  | 256 < b <= 384 |     SHA-384    |
+	//  |                |                |
+	//  |     384 < b    |     SHA-512    |
+	//	+----------------+----------------+
+	bs := k.PrivKey.Params().BitSize
+	var digest []byte
+
+	switch {
+
+	case bs <= 256:
+		d := sha256.Sum256([]byte(message))
+		digest = d[:]
+
+	case bs > 256 && bs <= 384:
+		d := sha512.Sum384([]byte(message))
+		digest = d[:]
+
+	case bs > 384:
+		d := sha512.Sum512([]byte(message))
+		digest = d[:]
+	}
+
+	// sign the hash
+	// if the hash length is greater than the key length,
+	// then only the first part of the hash that reaches the length of the key will be used
+	r, s, err := ecdsa.Sign(rand.Reader, k.PrivKey, digest[:])
+	if err != nil {
+		return
+	}
+
+	// encode the signature {R, S}
+	// big.Int.Bytes() will need padding in the case of leading zero bytes
+	//params := k.PrivKey.Curve.Params()
+	//curveOrderByteSize := params.P.BitLen() / 8
+	//rBytes, sBytes := r.Bytes(), s.Bytes()
+	//signatureBytes := make([]byte, curveOrderByteSize*2)
+	//copy(signatureBytes[curveOrderByteSize-len(rBytes):], rBytes)
+	//copy(signatureBytes[curveOrderByteSize*2-len(sBytes):], sBytes)
+
+	signatureBytes := r.Bytes()
+	signatureBytes = append(signatureBytes, s.Bytes()...)
+
+	signature = hex.EncodeToString(signatureBytes)
+
+	return
+}
+
+func (k *EcdsaKey) VerifySignature(message string, signature string) (verified bool) {
+
+	signatureBytes, err := hex.DecodeString(signature)
+	if err != nil {
+		return
+	}
+
+	// we should always hash the message before signing it
+	// TODO: detect what hash function to use by key length:
+	// https://www.ietf.org/rfc/rfc4754.txt
+	fmt.Println("signatureBytes:", len(signatureBytes)*8)
+	bs := k.PrivKey.Params().BitSize
+	fmt.Println("bs:", bs)
+	var digest []byte
+
+	switch {
+
+	case bs <= 256:
+		d := sha256.Sum256([]byte(message))
+		digest = d[:]
+
+	case bs > 256 && bs <= 384:
+		d := sha512.Sum384([]byte(message))
+		digest = d[:]
+
+	case bs > 384:
+		d := sha512.Sum512([]byte(message))
+		digest = d[:]
+	}
+
+	// get curve byte size
+	curveOrderByteSize := k.PubKey.Curve.Params().P.BitLen() / 8
+
+	// extract r and s
+	r, s := new(big.Int), new(big.Int)
+	r.SetBytes(signatureBytes[:curveOrderByteSize])
+	s.SetBytes(signatureBytes[curveOrderByteSize:])
+
+	verified = ecdsa.Verify(k.PubKey, digest[:], r, s)
+
 	return
 }
