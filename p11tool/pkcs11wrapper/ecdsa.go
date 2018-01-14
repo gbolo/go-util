@@ -225,9 +225,7 @@ func (k *EcdsaKey) VerifySignature(message string, signature string) (verified b
 	// we should always hash the message before signing it
 	// TODO: detect what hash function to use by key length:
 	// https://www.ietf.org/rfc/rfc4754.txt
-	fmt.Println("signatureBytes:", len(signatureBytes)*8)
 	bs := k.PrivKey.Params().BitSize
-	fmt.Println("bs:", bs)
 	var digest []byte
 
 	switch {
