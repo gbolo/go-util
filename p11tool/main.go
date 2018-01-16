@@ -55,8 +55,12 @@ func main() {
 	// complete actions
 	switch *action {
 
-	case "import":
+	case "importEC":
 		err = p11w.ImportECKeyFromFile(*keyFile)
+		exitWhenError(err)
+
+	case "importRSA":
+		err = p11w.ImportRSAKeyFromFile(*keyFile)
 		exitWhenError(err)
 
 	case "generateAndImport":
@@ -114,6 +118,56 @@ func main() {
 		verified, err = p11w.VerifySignature(message, sig, o[0])
 		exitWhenError(err)
 		fmt.Println("pkcs11 Verified:", verified)
+
+		// derive test
+		ec2 := pw.EcdsaKey{}
+		ec2.Generate("P-256")
+
+		secret, err := ec.DeriveSharedSecret(ec2.PubKey)
+		exitWhenError(err)
+		fmt.Printf("shared secret: %x\n", secret)
+
+		secret, err = ec2.DeriveSharedSecret(ec.PubKey)
+		exitWhenError(err)
+		fmt.Printf("shared secret: %x\n", secret)
+
+	case "testRsa":
+		message := "Some Test Message"
+
+		rsa := pw.RsaKey{}
+		//rsa.Generate(2048)
+		err = rsa.ImportPrivKeyFromFile("contrib/testfiles/key.rsa.pem")
+		exitWhenError(err)
+		rsa.GenSKI()
+
+		err = p11w.ImportRSAKey(rsa)
+		exitWhenError(err)
+
+		sig, err := rsa.SignMessage(message, 256)
+		exitWhenError(err)
+
+		fmt.Println("Signature:", sig)
+
+		// test PKCS11 ecdsa sign and verify
+		// Find object
+		id, err := hex.DecodeString("0344ae0121e025d998f5923174e9e4d69b899144ac79bfdf01c065bd4d99d6cb")
+		exitWhenError(err)
+
+		o, _, err := p11w.FindObjects([]*pkcs11.Attribute{
+			pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKK_RSA),
+			pkcs11.NewAttribute(pkcs11.CKA_LABEL, "TLSPRVKEY"),
+			pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_PRIVATE_KEY),
+			pkcs11.NewAttribute(pkcs11.CKA_ID, id),
+		},
+			2,
+		)
+		exitWhenError(err)
+
+		sig, err = p11w.SignMessageAdvanced([]byte(message), o[0], pkcs11.NewMechanism(pkcs11.CKM_SHA256_RSA_PKCS, nil))
+		exitWhenError(err)
+
+		fmt.Println("pkcs11 Signature:", sig)
+
 
 
 	default:

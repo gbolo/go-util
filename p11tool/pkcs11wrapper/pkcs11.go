@@ -4,6 +4,7 @@ import (
 	"crypto/elliptic"
 	"crypto/sha256"
 	"encoding/hex"
+	"math/big"
 	"errors"
 	"fmt"
 	"os"
@@ -278,6 +279,72 @@ func (p11w *Pkcs11Wrapper) ImportECKey(ec EcdsaKey) (err error) {
 
 }
 
+func (p11w *Pkcs11Wrapper) ImportRSAKey(rsa RsaKey) (err error) {
+
+	if rsa.PrivKey == nil {
+		err = errors.New("no key to import")
+		return
+	}
+
+	rsa.GenSKI()
+
+
+	// pubkey import
+	pubExpBytes := big.NewInt(int64(rsa.PubKey.E)).Bytes()
+
+	keyTemplate := []*pkcs11.Attribute{
+		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKK_RSA),
+		pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_PUBLIC_KEY),
+		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
+		pkcs11.NewAttribute(pkcs11.CKA_VERIFY, true),
+		pkcs11.NewAttribute(pkcs11.CKA_MODULUS, rsa.PubKey.N.Bytes()),
+		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, pubExpBytes),
+
+		pkcs11.NewAttribute(pkcs11.CKA_ID, rsa.SKI.Sha256Bytes),
+		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "TLSPUBKEY"),
+		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, false),
+	}
+
+	_, err = p11w.Context.CreateObject(p11w.Session, keyTemplate)
+	if err != nil {
+		return
+	} else {
+		fmt.Printf("Object was imported with CKA_LABEL:%s CKA_ID:%x\n", "TLSPUBKEY", rsa.SKI.Sha256Bytes)
+	}
+
+	keyTemplate = []*pkcs11.Attribute{
+		// According to: https://www.cryptsoft.com/pkcs11doc/v220/group__SEC__12__1__3__RSA__PRIVATE__KEY__OBJECTS.html
+		// if a particular token stores values only for the CKA_PRIVATE_EXPONENT, CKA_PRIME_1, and CKA_PRIME_2 attributes,
+		// then Cryptoki is certainly able to report values for all the attributes above (since they can all be computed
+		// efficiently from these three values).
+		// However, a Cryptoki implementation may or may not actually do this extra computation.
+		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKK_RSA),
+		pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_PRIVATE_KEY),
+		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, true),
+		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
+		pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
+		pkcs11.NewAttribute(pkcs11.CKA_MODULUS, rsa.PrivKey.N.Bytes()),
+		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, pubExpBytes),
+		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE_EXPONENT, rsa.PrivKey.D.Bytes()),
+		pkcs11.NewAttribute(pkcs11.CKA_PRIME_1, rsa.PrivKey.Primes[0].Bytes()),
+		pkcs11.NewAttribute(pkcs11.CKA_PRIME_2, rsa.PrivKey.Primes[1].Bytes()),
+
+		pkcs11.NewAttribute(pkcs11.CKA_ID, rsa.SKI.Sha256Bytes),
+		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "TLSPRVKEY"),
+		pkcs11.NewAttribute(pkcs11.CKA_EXTRACTABLE, true),
+
+		// Error: pkcs11: 0x12: CKR_ATTRIBUTE_TYPE_INVALID
+		//pkcs11.NewAttribute(pkcs11.CKR_ATTRIBUTE_SENSITIVE, false),
+	}
+
+	_, err = p11w.Context.CreateObject(p11w.Session, keyTemplate)
+	if err == nil {
+		fmt.Printf("Object was imported with CKA_LABEL:%s CKA_ID:%x\n", "TLSPRVKEY", rsa.SKI.Sha256Bytes)
+	}
+	return
+
+}
+
 func (p11w *Pkcs11Wrapper) ImportECKeyFromFile(file string) (err error) {
 
 	// read in key from file
@@ -294,8 +361,25 @@ func (p11w *Pkcs11Wrapper) ImportECKeyFromFile(file string) (err error) {
 
 }
 
+func (p11w *Pkcs11Wrapper) ImportRSAKeyFromFile(file string) (err error) {
+
+	// read in key from file
+	rsa := RsaKey{}
+	err = rsa.ImportPrivKeyFromFile(file)
+	if err != nil {
+		return
+	}
+
+	// import key to hsm
+	err = p11w.ImportRSAKey(rsa)
+
+	return
+
+}
+
 func (p11w *Pkcs11Wrapper) SignMessage(message string, key pkcs11.ObjectHandle) (signature string, err error) {
 
+	// TODO: diff mech needed for rsa. example: CKM_RSA_PKCS CKM_ECDSA
 	err = p11w.Context.SignInit(p11w.Session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_ECDSA, nil)}, key)
 	if err != nil {
 		return
@@ -307,6 +391,24 @@ func (p11w *Pkcs11Wrapper) SignMessage(message string, key pkcs11.ObjectHandle) 
 	d := sha256.Sum256([]byte(message))
 	digest := d[:]
 	signatureBytes, err := p11w.Context.Sign(p11w.Session, digest)
+	if err != nil {
+		return
+	}
+
+	signature = hex.EncodeToString(signatureBytes)
+
+	return
+}
+
+/* Advanced form of signing message, specify mechanism. Assume data is already prepared for mechanism (not altered in this function) */
+func (p11w *Pkcs11Wrapper) SignMessageAdvanced(data []byte, key pkcs11.ObjectHandle, mechanism *pkcs11.Mechanism) (signature string, err error) {
+
+	err = p11w.Context.SignInit(p11w.Session, []*pkcs11.Mechanism{mechanism}, key)
+	if err != nil {
+		return
+	}
+
+	signatureBytes, err := p11w.Context.Sign(p11w.Session, data)
 	if err != nil {
 		return
 	}
