@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/miekg/pkcs11"
 	"os"
+	"strings"
 )
 
 func exitWhenError(err error) {
@@ -20,7 +21,7 @@ func exitWhenError(err error) {
 func main() {
 
 	// get flags
-	pkcs11Library := flag.String("lib", "/usr/lib/softhsm/libsofthsm2.so", "Location of pkcs11 library")
+	pkcs11Library := flag.String("lib", "", "Location of pkcs11 library")
 	slotLabel := flag.String("slot", "ForFabric", "Slot Label")
 	slotPin := flag.String("pin", "98765432", "Slot PIN")
 	action := flag.String("action", "list", "list,import,generateAndImport")
@@ -30,15 +31,26 @@ func main() {
 	flag.Parse()
 
 	// initialize pkcs11
+	var p11Lib string
+	var err error
+
+	if *pkcs11Library == "" {
+		p11Lib, err = searchForLib("/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/softhsm/libsofthsm2.so ,/usr/lib/s390x-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/powerpc64le-linux-gnu/softhsm/libsofthsm2.so, /usr/local/Cellar/softhsm/2.1.0/lib/softhsm/libsofthsm2.so")
+		exitWhenError(err)
+	} else {
+		p11Lib, err = searchForLib(*pkcs11Library)
+		exitWhenError(err)
+	}
+
 	p11w := pw.Pkcs11Wrapper{
 		Library: pw.Pkcs11Library{
-			Path: *pkcs11Library,
+			Path: p11Lib,
 		},
 		SlotLabel: *slotLabel,
 		SlotPin:   *slotPin,
 	}
 
-	err := p11w.InitContext()
+	err = p11w.InitContext()
 	exitWhenError(err)
 
 	err = p11w.InitSession()
@@ -183,4 +195,21 @@ func main() {
 
 	}
 
+}
+
+func searchForLib(paths string) (firstFound string, err error) {
+
+	libPaths := strings.Split(paths, ",")
+	for _, path := range libPaths {
+		if _, err = os.Stat(strings.TrimSpace(path)); !os.IsNotExist(err) {
+			firstFound = strings.TrimSpace(path)
+			break
+		}
+	}
+
+	if firstFound == "" {
+		err = fmt.Errorf("no suitable paths for pkcs11 library found: %s", paths)
+	}
+
+	return
 }
