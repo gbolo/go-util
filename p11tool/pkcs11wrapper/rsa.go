@@ -1,7 +1,6 @@
 package pkcs11wrapper
 
 import (
-
 	"crypto"
 	"crypto/rand"
 	"crypto/sha1"
@@ -10,9 +9,9 @@ import (
 	"encoding/hex"
 
 	"crypto/rsa"
-	"io/ioutil"
-	"encoding/pem"
 	"crypto/sha512"
+	"encoding/pem"
+	"io/ioutil"
 )
 
 type RsaKey struct {
@@ -84,7 +83,7 @@ func (k *RsaKey) SignMessage(message string, shaSize int) (signature string, err
 
 	var digest []byte
 	var hash crypto.Hash
-	switch  shaSize {
+	switch shaSize {
 
 	case 256:
 		d := sha256.Sum256([]byte(message))

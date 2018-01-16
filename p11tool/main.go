@@ -3,11 +3,11 @@ package main
 import (
 	pw "github.com/gbolo/go-util/p11tool/pkcs11wrapper"
 	//de "github.com/gbolo/go-util/lib/debugging"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"github.com/miekg/pkcs11"
 	"os"
-	"encoding/hex"
 )
 
 func exitWhenError(err error) {
@@ -82,7 +82,6 @@ func main() {
 		verified := ec.VerifySignature(message, sig)
 		fmt.Println("Verified:", verified)
 
-
 		// test PKCS11 ecdsa sign and verify
 		// Find object
 		id, err := hex.DecodeString("018f389d200e48536367f05b99122f355ba33572009bd2b8b521cdbbb717a5b5")
@@ -93,7 +92,7 @@ func main() {
 			pkcs11.NewAttribute(pkcs11.CKA_LABEL, "BCPRV1"),
 			pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_PRIVATE_KEY),
 			pkcs11.NewAttribute(pkcs11.CKA_ID, id),
-			},
+		},
 			2,
 		)
 
@@ -167,8 +166,6 @@ func main() {
 		exitWhenError(err)
 
 		fmt.Println("pkcs11 Signature:", sig)
-
-
 
 	default:
 		p11w.ListObjects(

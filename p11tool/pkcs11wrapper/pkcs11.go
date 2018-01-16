@@ -4,9 +4,9 @@ import (
 	"crypto/elliptic"
 	"crypto/sha256"
 	"encoding/hex"
-	"math/big"
 	"errors"
 	"fmt"
+	"math/big"
 	"os"
 
 	"github.com/miekg/pkcs11"
@@ -287,7 +287,6 @@ func (p11w *Pkcs11Wrapper) ImportRSAKey(rsa RsaKey) (err error) {
 	}
 
 	rsa.GenSKI()
-
 
 	// pubkey import
 	pubExpBytes := big.NewInt(int64(rsa.PubKey.E)).Bytes()
