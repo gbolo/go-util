@@ -25,6 +25,7 @@ func main() {
 	slotPin := flag.String("pin", "98765432", "Slot PIN")
 	action := flag.String("action", "list", "list,import,generateAndImport")
 	keyFile := flag.String("keyFile", "/some/dir/key.pem", "path to key you want to import")
+	keyType := flag.String("keyType", "EC", "Type of key (EC,RSA)")
 
 	flag.Parse()
 
@@ -55,13 +56,14 @@ func main() {
 	// complete actions
 	switch *action {
 
-	case "importEC":
-		err = p11w.ImportECKeyFromFile(*keyFile)
-		exitWhenError(err)
-
-	case "importRSA":
-		err = p11w.ImportRSAKeyFromFile(*keyFile)
-		exitWhenError(err)
+	case "import":
+		if *keyType == "RSA" {
+			err = p11w.ImportRSAKeyFromFile(*keyFile)
+			exitWhenError(err)
+		} else {
+			err = p11w.ImportECKeyFromFile(*keyFile)
+			exitWhenError(err)
+		}
 
 	case "generateAndImport":
 		ec := pw.EcdsaKey{}
@@ -69,7 +71,7 @@ func main() {
 		ec.Generate("P-256")
 		p11w.ImportECKey(ec)
 
-	case "test":
+	case "testEc":
 
 		message := "Some Test Message"
 
