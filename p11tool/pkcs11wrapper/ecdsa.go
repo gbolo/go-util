@@ -255,3 +255,11 @@ func (k *EcdsaKey) VerifySignature(message string, signature string) (verified b
 
 	return
 }
+
+func (k *EcdsaKey) DeriveSharedSecret(anotherPublicKey *ecdsa.PublicKey) (secret []byte, err error) {
+
+	x, _ := k.PrivKey.Curve.ScalarMult(anotherPublicKey.X, anotherPublicKey.Y, k.PrivKey.D.Bytes())
+	secret = x.Bytes()
+
+	return
+}
