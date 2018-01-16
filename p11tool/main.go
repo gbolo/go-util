@@ -66,10 +66,16 @@ func main() {
 		}
 
 	case "generateAndImport":
-		ec := pw.EcdsaKey{}
-		// TODO: fix non working curves (P-521)
-		ec.Generate("P-256")
-		p11w.ImportECKey(ec)
+		if *keyType == "RSA" {
+			rsa := pw.RsaKey{}
+			rsa.Generate(2048)
+			p11w.ImportRSAKey(rsa)
+		} else {
+			ec := pw.EcdsaKey{}
+			// TODO: fix non working curves (P-521)
+			ec.Generate("P-256")
+			p11w.ImportECKey(ec)
+		}
 
 	case "testEc":
 
