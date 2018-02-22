@@ -269,6 +269,9 @@ func (p11w *Pkcs11Wrapper) ImportECKey(ec EcdsaKey) (err error) {
 		pkcs11.NewAttribute(pkcs11.CKR_ATTRIBUTE_SENSITIVE, false),
 		pkcs11.NewAttribute(pkcs11.CKA_EXTRACTABLE, true),
 		pkcs11.NewAttribute(pkcs11.CKA_VALUE, ec.PrivKey.D.Bytes()),
+
+		// implicitly enable derive for now
+		pkcs11.NewAttribute(pkcs11.CKA_DERIVE, true),
 	}
 
 	_, err = p11w.Context.CreateObject(p11w.Session, keyTemplate)
