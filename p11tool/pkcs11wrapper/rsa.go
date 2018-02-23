@@ -21,7 +21,7 @@ type RsaKey struct {
 }
 
 // SKI returns the subject key identifier of this key.
-func (k *RsaKey) GenSKI() (ski []byte) {
+func (k *RsaKey) GenSKI() {
 	if k.PubKey == nil {
 		return
 	}

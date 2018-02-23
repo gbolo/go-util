@@ -30,9 +30,9 @@ type SubjectKeyIdentifier struct {
 }
 
 // SKI returns the subject key identifier of this key.
-func (k *EcdsaKey) GenSKI() (ski []byte) {
+func (k *EcdsaKey) GenSKI() {
 	if k.PubKey == nil {
-		return nil
+		return
 	}
 
 	// Marshall the public key

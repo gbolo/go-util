@@ -1,16 +1,33 @@
 package main
 
 import (
-	pw "github.com/gbolo/go-util/p11tool/pkcs11wrapper"
-	//de "github.com/gbolo/go-util/lib/debugging"
 	"encoding/hex"
 	"flag"
 	"fmt"
 	"github.com/miekg/pkcs11"
 	"os"
 	"strings"
+
+	pw "github.com/gbolo/go-util/p11tool/pkcs11wrapper"
 )
 
+const (
+
+	// locations to search for pkcs11 lib if none are specified
+	defaultLibPaths = `
+/usr/lib/softhsm/libsofthsm2.so,
+/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so,
+/usr/lib/s390x-linux-gnu/softhsm/libsofthsm2.so,
+/usr/lib/powerpc64le-linux-gnu/softhsm/libsofthsm2.so,
+/usr/local/Cellar/softhsm/2.1.0/lib/softhsm/libsofthsm2.so`
+)
+
+var (
+	// shared pkcs11 wrapper struct
+	p11w pw.Pkcs11Wrapper
+)
+
+// exit cleanly when error is no nil
 func exitWhenError(err error) {
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -18,31 +35,75 @@ func exitWhenError(err error) {
 	}
 }
 
+// search comma-separated list of paths for pkcs11 lib
+func searchForLib(paths string) (firstFound string, err error) {
+
+	libPaths := strings.Split(paths, ",")
+	for _, path := range libPaths {
+		if _, err = os.Stat(strings.TrimSpace(path)); !os.IsNotExist(err) {
+			firstFound = strings.TrimSpace(path)
+			break
+		}
+	}
+
+	if firstFound == "" {
+		err = fmt.Errorf("no suitable paths for pkcs11 library found: %s", paths)
+	}
+
+	return
+}
+
+
 func main() {
 
 	// get flags
 	pkcs11Library := flag.String("lib", "", "Location of pkcs11 library")
 	slotLabel := flag.String("slot", "ForFabric", "Slot Label")
 	slotPin := flag.String("pin", "98765432", "Slot PIN")
-	action := flag.String("action", "list", "list,import,generateAndImport")
-	keyFile := flag.String("keyFile", "/some/dir/key.pem", "path to key you want to import")
+	action := flag.String("action", "list", "list,import,generateAndImport,getSKI")
+	keyFile := flag.String("keyFile", "/some/dir/key.pem", "path to key you want to import or getSKI")
 	keyType := flag.String("keyType", "EC", "Type of key (EC,RSA)")
 
 	flag.Parse()
 
-	// initialize pkcs11
-	var p11Lib string
 	var err error
 
+	// complete actions which do not require HSM
+	switch *action {
+
+	case "getSKI":
+		if *keyType == "RSA" {
+			key := pw.RsaKey{}
+			err = key.ImportPrivKeyFromFile(*keyFile)
+			exitWhenError(err)
+			key.GenSKI()
+			fmt.Printf("SKI(sha256): %s\n", key.SKI.Sha256)
+			os.Exit(0)
+		} else {
+			key := pw.EcdsaKey{}
+			err = key.ImportPrivKeyFromFile(*keyFile)
+			exitWhenError(err)
+			key.GenSKI()
+			fmt.Printf("SKI(sha256): %s\n", key.SKI.Sha256)
+			os.Exit(0)
+		}
+
+	}
+
+	// complete actions which require HSM
+
+	// initialize pkcs11
+	var p11Lib string
+
 	if *pkcs11Library == "" {
-		p11Lib, err = searchForLib("/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/softhsm/libsofthsm2.so ,/usr/lib/s390x-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/powerpc64le-linux-gnu/softhsm/libsofthsm2.so, /usr/local/Cellar/softhsm/2.1.0/lib/softhsm/libsofthsm2.so")
+		p11Lib, err = searchForLib(defaultLibPaths)
 		exitWhenError(err)
 	} else {
 		p11Lib, err = searchForLib(*pkcs11Library)
 		exitWhenError(err)
 	}
 
-	p11w := pw.Pkcs11Wrapper{
+	p11w = pw.Pkcs11Wrapper{
 		Library: pw.Pkcs11Library{
 			Path: p11Lib,
 		},
@@ -65,7 +126,6 @@ func main() {
 	defer p11w.Context.CloseSession(p11w.Session)
 	defer p11w.Context.Logout(p11w.Session)
 
-	// complete actions
 	switch *action {
 
 	case "import":
@@ -195,21 +255,4 @@ func main() {
 
 	}
 
-}
-
-func searchForLib(paths string) (firstFound string, err error) {
-
-	libPaths := strings.Split(paths, ",")
-	for _, path := range libPaths {
-		if _, err = os.Stat(strings.TrimSpace(path)); !os.IsNotExist(err) {
-			firstFound = strings.TrimSpace(path)
-			break
-		}
-	}
-
-	if firstFound == "" {
-		err = fmt.Errorf("no suitable paths for pkcs11 library found: %s", paths)
-	}
-
-	return
 }
