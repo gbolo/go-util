@@ -13,6 +13,7 @@ import (
 )
 
 // Copyright (c) 2017 Escape Velocity, Inc.
+// Copyright (c) 2018 gbolo
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -164,6 +165,122 @@ func (di *DataTablesInfo) MySQLFilter(SQLFieldMap map[string]string) (res string
 			}
 		}
 	}
+	return
+}
+
+// duplicate column names
+func getAllColumns(list []ColData) (allColumns []string, err error) {
+
+	dupChecker := make(map[string]bool)
+
+	for i, col := range list {
+
+		// make sure col.Name not empty
+		if col.Name == "" {
+			err = fmt.Errorf("column %d has no name", i)
+			return
+		}
+
+		// check if it is a duplicate
+		if dupChecker[col.Name] == true {
+			err = fmt.Errorf("column %d has a duplicate name: %s", i, col.Name)
+			return
+		} else {
+			dupChecker[col.Name] = true
+		}
+
+		// append allColumns
+		allColumns = append(allColumns, col.Name)
+	}
+
+	return
+}
+
+// MySQLGenerateQuery
+func (di *DataTablesInfo) MySQLGenerateQueryFromColNames(tableName string) (query string, err error) {
+
+	// validate column data
+	allColumns, err := getAllColumns(di.Columns)
+	if err != nil {
+		return
+	}
+
+	extra := "WHERE ("
+	whereClause := ""
+	for _, colData := range di.Columns {
+
+		if colData.Searchable {
+			// If we have a global search val, generate a match against the global value for this field
+			if di.Searchval != "" {
+				// For wildcards we have to generate a REGEXP request
+				if di.UseRegex {
+					whereClause += extra + colData.Name + " REGEX " + di.Searchval
+					extra = " OR "
+				} else {
+					// In the special case where we have a top level non wild card search value we want
+					// to gang all the fields together into a single match string
+					whereClause += extra + "MATCH(" + colData.Name + ") AGAINST(" + di.Searchval + ")"
+					extra = " OR "
+				}
+			}
+			// See if we have a search value specific for this individual element
+			if colData.Searchval != "" {
+				if colData.UseRegex {
+					whereClause += extra + colData.Name + " REGEXP '" + colData.Searchval + "'"
+				} else {
+					whereClause += extra + colData.Name + " LIKE '%" + colData.Searchval + "%'"
+				}
+				extra = " AND "
+			}
+		}
+	}
+	if whereClause != "" {
+		whereClause += ")"
+	}
+
+	// order by clause
+	extra = "ORDER BY "
+	orderClause := ""
+	// Go through the list of requested items to order
+	for _, orderItem := range di.Order {
+		// Make sure that the column is in range
+		if orderItem.ColNum >= len(di.Columns) {
+			err = fmt.Errorf("Datatables Request order column %v out of range %v of columns", orderItem.ColNum, len(di.Columns))
+			return
+		}
+		// Get the data for that column and figure out if the name is one of the fields that we
+		// allow in the table
+		colData := di.Columns[orderItem.ColNum]
+		// Make sure we can actually order on the column (in theory this will never happen)
+		if !colData.Orderable {
+			err = fmt.Errorf("Datatables requested ordering on non-orderable column %v", colData.Data)
+			return
+		}
+		// We have the column in the database, add it to the order by query that we are generating
+		// The first time we have " ORDER BY " in the extra string, subsequent times we get a simple ","
+		// which allows us to build up the string without backtracking to remove characters
+		orderClause += extra + colData.Name
+		if orderItem.Direction == Desc {
+			orderClause += " DESC"
+		}
+		extra = ","
+	}
+	// If for some reason we got to the end with no columns, then we give them the order by the first item
+	if orderClause == "" {
+		orderClause = extra + "1"
+	}
+
+	// put together query
+	query = fmt.Sprintf(
+		"SELECT %s FROM %s %s %s LIMIT %d, %d",
+		strings.Join(allColumns, ","),
+		tableName,
+		whereClause,
+		orderClause,
+		di.Start,
+		di.Length,
+	)
+
 	return
 }
 
