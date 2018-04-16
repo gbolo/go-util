@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"strings"
 
 	"github.com/miekg/pkcs11"
 	"github.com/olekukonko/tablewriter"
@@ -84,6 +85,11 @@ func (p11w *Pkcs11Wrapper) InitSession() (err error) {
 func (p11w *Pkcs11Wrapper) Login() (err error) {
 
 	err = p11w.Context.Login(p11w.Session, pkcs11.CKU_USER, p11w.SlotPin)
+
+	// ignore login error CKR_USER_ALREADY_LOGGED_IN
+	if strings.Contains(err.Error(), "CKR_USER_ALREADY_LOGGED_IN") {
+		err = nil
+	}
 
 	return
 }
