@@ -27,6 +27,12 @@ var routes = Routes{
 		handlerEnv,
 	},
 	Route{
+		"Environments",
+		"GET",
+		"/api/env/summary",
+		handlerEnvSummary,
+	},
+	Route{
 		"Refresh",
 		"POST",
 		"/api/env/refresh",
@@ -46,7 +52,12 @@ var routes = Routes{
 	},
 
 	// UI endpoints
-
+	Route{
+		"Main",
+		"GET",
+		"/",
+		handlerMain,
+	},
 }
 
 func newRouter() *mux.Router {

@@ -1,0 +1,21 @@
+
+.inactive-row {
+    color: #6c757d;
+    background-color: #f8f9fa;
+}
+
+.row {
+    margin-bottom: 1rem;
+}
+
+.col-sm-4 {
+    margin-bottom: 1rem;
+}
+
+.badge {
+    margin-left: 0.5rem;
+}
+
+.stop-button {
+    margin-left: 1rem;
+}

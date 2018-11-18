@@ -52,6 +52,13 @@ type ec2Environment struct {
 	State     string
 }
 
+type ec2EnvironmentSummary struct {
+	Name             string
+	RunningInstances int
+	TotalInstances   int
+	State            string
+}
+
 // for global cached table
 type envList []ec2Environment
 
@@ -207,6 +214,25 @@ func startupEnv(envName string) (response []byte, err error) {
 	} else {
 		err = fmt.Errorf("env [%s] has no associated instances", envName)
 		log.Errorf("env [%s] has no associated instances", envName)
+	}
+	return
+}
+
+// returns an env Summary
+func getEnvSummary() (envSummary []ec2EnvironmentSummary) {
+	for _, env := range cachedTable {
+		running := 0
+		for _, instance := range env.Instances {
+			if instance.State == "running" {
+				running++
+			}
+		}
+		envSummary = append(envSummary, ec2EnvironmentSummary{
+			Name:             env.Name,
+			State:            env.State,
+			RunningInstances: running,
+			TotalInstances:   len(env.Instances),
+		})
 	}
 	return
 }
