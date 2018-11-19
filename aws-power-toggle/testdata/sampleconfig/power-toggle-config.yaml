@@ -61,7 +61,7 @@ aws:
   # prevents shutting down of too many instances
   max_instances_to_shutdown: 16
 
-  # which instance types to ignore
+  # optional list of instance types to ignore
   ignore_instance_types:
     - c5d.large
     - c5d.xlarge
@@ -69,6 +69,11 @@ aws:
     - c5d.4xlarge
     - c5d.9xlarge
     - c5d.18xlarge
+
+  # !! SAFETY option !!
+  # optional list of environment names to ignore
+  ignore_environments:
+    - prod
 
 # misc settings --------------------------------------------------------------------------------------------------------
 log_level: DEBUG

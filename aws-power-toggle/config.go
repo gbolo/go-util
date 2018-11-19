@@ -64,6 +64,7 @@ func ConfigInit(cfgFile string) {
 
 	// assign variable values to config values
 	awsRegion = viper.GetString("aws.region")
+	envNameIgnore = viper.GetStringSlice("aws.ignore_environments")
 	instanceTypeIgnore = viper.GetStringSlice("aws.ignore_instance_types")
 	maxInstancesToShutdown = viper.GetInt("aws.max_instances_to_shutdown")
 	requiredTagKey = viper.GetString("aws.required_tag_key")
@@ -92,7 +93,13 @@ func printConfigSummary() {
 	} {
 		log.Debugf("%s: %s\n", c, viper.GetString(c))
 	}
-	log.Debugf("%s: %v\n", "aws.ignore_instance_types", viper.GetStringSlice("aws.ignore_instance_types"))
+
+	for _, c := range []string{
+		"aws.ignore_instance_types",
+		"aws.ignore_environments",
+	} {
+		log.Debugf("%s: %v\n", c, viper.GetStringSlice(c))
+	}
 }
 
 // checks that the config is correctly defined

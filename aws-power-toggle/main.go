@@ -34,6 +34,8 @@ var (
 	maxInstancesToShutdown int
 	// ignore these instance types
 	instanceTypeIgnore []string
+	// ignore these environment names
+	envNameIgnore []string
 )
 
 type ec2Instance struct {
@@ -77,12 +79,30 @@ func determineEnvStates() {
 	}
 }
 
-// checks if an instance should be included
+// checks if an instance should be included based on instance type
 // true if its OK, false to ignore
 func checkInstanceType(instanceType string) (ok bool) {
 	ok = true
 	for _, ignoredType := range instanceTypeIgnore {
 		if ignoredType == instanceType {
+			ok = false
+			break
+		}
+	}
+	return
+}
+
+// checks if an instance should be included based on environment name
+// also ensures that the env name is not empty
+// true if its OK, false to ignore
+func validateEnvName(envName string) (ok bool) {
+	ok = true
+	if envName == "" {
+		ok = false
+		return
+	}
+	for _, ignoredEnvName := range envNameIgnore {
+		if ignoredEnvName == envName {
 			ok = false
 			break
 		}
@@ -146,7 +166,7 @@ func refreshTable() (err error) {
 				}
 			}
 
-			if instanceObj.Environment != "" {
+			if validateEnvName(instanceObj.Environment) {
 				addInstance(&instanceObj)
 			}
 		}
