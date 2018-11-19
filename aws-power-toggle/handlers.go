@@ -26,6 +26,14 @@ func handlerEnv(w http.ResponseWriter, req *http.Request) {
 // returns summary of all envs
 func handlerEnvSummary(w http.ResponseWriter, req *http.Request) {
 
+	// refresh the data
+	if err := refreshTable(); err != nil {
+		log.Errorf("refresh error: %v", err)
+		fmt.Fprintf(w, "{\"error\":\"%v\"}\n", err)
+		return
+	}
+
+	// return result
 	jData, err := json.Marshal(getEnvSummary())
 	if err != nil {
 		log.Errorf("error parsing json: %v", err)
