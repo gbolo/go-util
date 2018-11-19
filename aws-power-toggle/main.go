@@ -181,10 +181,11 @@ func shutdownEnv(envName string) (response []byte, err error) {
 		}
 
 		req := awsClient.StopInstancesRequest(input)
-		resp, err := req.Send()
+		resp, reqErr := req.Send()
 		response, _ = json.MarshalIndent(resp, "", "  ")
-		if err != nil {
-			log.Errorf("aws api error [%s]: %v", envName, err)
+		if reqErr != nil {
+			log.Errorf("aws api error [%s]: %v", envName, reqErr)
+			err = reqErr
 		} else {
 			log.Infof("successfully stopped env %s", envName)
 		}
@@ -204,10 +205,11 @@ func startupEnv(envName string) (response []byte, err error) {
 		}
 
 		req := awsClient.StartInstancesRequest(input)
-		resp, err := req.Send()
+		resp, reqErr := req.Send()
 		response, _ = json.MarshalIndent(resp, "", "  ")
-		if err != nil {
-			log.Errorf("aws api error [%s]: %v", envName, err)
+		if reqErr != nil {
+			log.Errorf("aws api error [%s]: %v", envName, reqErr)
+			err = reqErr
 		} else {
 			log.Infof("successfully started env %s", envName)
 		}
