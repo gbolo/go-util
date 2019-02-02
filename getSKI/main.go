@@ -1,13 +1,17 @@
-// simple tool to get Subject Key Identifier in various formats
+// simple tool to get Subject Key Identifier (SKI) in various formats
+// supports pem encoded certificates and pk1/pk8 keys (unencrypted)
 package main
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/x509"
-	"encoding/hex"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/pem"
 	"flag"
 	"fmt"
@@ -16,66 +20,137 @@ import (
 )
 
 var (
-	PubKey         *ecdsa.PublicKey
-	PrivKey        *ecdsa.PrivateKey
-	SKISha1        string
-	SKISha1Bytes   []byte
-	SKISha256      string
-	SKISha256Bytes []byte
+	publicKey crypto.PublicKey
+	// SKISha1 is the raw public key hashed with SHA1 (hex encoded)
+	SKISha1 string
+	// SKISha256 is the raw public key hashed with SHA256 (hex encoded)
+	SKISha256 string
 )
 
-func main() {
+func exitWithErr(i ...interface{}) {
+	fmt.Printf("Error: %v\n", i)
+	os.Exit(1)
+}
 
-	file := flag.String("file", "/some/dir/cert.pem", "path to pem file")
+func main() {
+	filePath := flag.String("pem", "", "path to pem file (supports x509 certs and unencrypted pkcs8/pkcs1 private keys)")
 	flag.Parse()
 
-	err := importPubKeyFromCertFile(*file)
-	if err != nil {
-		fmt.Println("Error importPubKeyFromCertFile:", err)
-		os.Exit(1)
+	if *filePath == "" {
+		exitWithErr("pem file path was not specified (-pem). See --help")
 	}
 
-	genSKI()
-	fmt.Printf(" file: %s\n SKI-sha1: %s\n SKI-sha256: %s\n", *file, SKISha1, SKISha256)
+	fileBytes, err := ioutil.ReadFile(*filePath)
+	if err != nil {
+		exitWithErr(err)
+	}
 
+	pemBlock, _ := pem.Decode(fileBytes)
+	if pemBlock == nil {
+		exitWithErr("invalid pem file")
+	}
+
+	switch pemBlock.Type {
+	case "CERTIFICATE":
+		fmt.Println("pem encoded CERTIFICATE")
+		x509Cert, err := x509.ParseCertificate(pemBlock.Bytes)
+		if err != nil {
+			exitWithErr(err)
+		}
+		switch pkey := x509Cert.PublicKey.(type) {
+		case *ecdsa.PublicKey:
+			publicKey = *pkey
+		case *rsa.PublicKey:
+			publicKey = *pkey
+		default:
+			exitWithErr(fmt.Sprintf("unsupported public key type: %T", pkey))
+		}
+	// PKCS8 key
+	case "PRIVATE KEY":
+		fmt.Println("pem encoded PKCS8 PRIVATE KEY")
+		parsePKCS8PrivateKey(pemBlock.Bytes)
+	// PKCS1 key
+	case "EC PRIVATE KEY", "RSA PRIVATE KEY":
+		fmt.Println("pem encoded PKCS1 PRIVATE KEY")
+		parsePKCS1PrivateKey(pemBlock.Bytes)
+	default:
+		exitWithErr(fmt.Sprintf("unsupported pem file type: %v", pemBlock.Type))
+	}
+
+	calculateSKI()
+	fmt.Printf(" File Path:  %s\n SKI-sha1:   %s\n SKI-sha256: %s\n", *filePath, SKISha1, SKISha256)
 }
 
-func importPubKeyFromCertFile(file string) (err error) {
-
-	certFile, err := ioutil.ReadFile(file)
-	if err != nil {
-		return
+func calculateSKI() {
+	switch pubKey := publicKey.(type) {
+	case ecdsa.PublicKey:
+		fmt.Printf("EC Key (%v)\n", pubKey.Curve.Params().Name)
+		raw := elliptic.Marshal(pubKey.Curve, pubKey.X, pubKey.Y)
+		SKISha1 = fmt.Sprintf("%x", sha1.Sum(raw))
+		SKISha256 = fmt.Sprintf("%x", sha256.Sum256(raw))
+	case rsa.PublicKey:
+		fmt.Printf("RSA Key (%v bits)\n", pubKey.N.BitLen())
+		raw := pubKey.N.Bytes()
+		SKISha1 = fmt.Sprintf("%x", sha1.Sum(raw))
+		SKISha256 = fmt.Sprintf("%x", sha256.Sum256(raw))
 	}
-
-	certBlock, _ := pem.Decode(certFile)
-	x509Cert, err := x509.ParseCertificate(certBlock.Bytes)
-	if err != nil {
-		return
-	}
-
-	PubKey = x509Cert.PublicKey.(*ecdsa.PublicKey)
-
-	return
 }
 
-func genSKI() {
-	if PubKey == nil {
+func parsePKCS1PrivateKey(der []byte) {
+	// try RSA
+	if key, err := x509.ParsePKCS1PrivateKey(der); err == nil {
+		publicKey = key.PublicKey
 		return
 	}
+	// try EC
+	if key, err := x509.ParseECPrivateKey(der); err == nil {
+		publicKey = key.PublicKey
+		return
+	}
+	// if neither RSA or EC, we should fail
+	exitWithErr("PKCS1 key is neither RSA or EC")
+}
 
-	// Marshall the public key
-	raw := elliptic.Marshal(PubKey.Curve, PubKey.X, PubKey.Y)
+func parsePKCS8PrivateKey(der []byte) {
+	key, err := x509.ParsePKCS8PrivateKey(der)
+	if err == nil {
+		switch key := key.(type) {
+		case *rsa.PrivateKey:
+			publicKey = key.PublicKey
+			return
+		case *ecdsa.PrivateKey:
+			publicKey = key.PublicKey
+			return
+		default:
+			exitWithErr("PKCS8 key is neither RSA or EC")
+		}
+	}
 
-	// Hash it
-	hash := sha256.New()
-	hash.Write(raw)
-	SKISha256Bytes = hash.Sum(nil)
-	SKISha256 = hex.EncodeToString(SKISha256Bytes)
+	// err must have a value
+	exitWithErr(err)
+}
 
-	hash = sha1.New()
-	hash.Write(raw)
-	SKISha1Bytes = hash.Sum(nil)
-	SKISha1 = hex.EncodeToString(SKISha1Bytes)
+// another way of getting SKI. requires pointers (ie: *ecdsa.publicKey)
+// not used for now...
+func calculateSKIAlternative() {
+	fmt.Printf("pk: %T %v\n", publicKey, publicKey)
 
-	return
+	encodedPub, err := x509.MarshalPKIXPublicKey(publicKey)
+	if err != nil {
+		exitWithErr("MarshalPKIXPublicKey", err)
+	}
+
+	var subPKI subjectPublicKeyInfo
+	_, err = asn1.Unmarshal(encodedPub, &subPKI)
+	if err != nil {
+		exitWithErr(err)
+	}
+
+	SKISha1 = fmt.Sprintf("%x", sha1.Sum(subPKI.SubjectPublicKey.Bytes))
+	SKISha256 = fmt.Sprintf("%x", sha256.Sum256(subPKI.SubjectPublicKey.Bytes))
+}
+
+type subjectPublicKeyInfo struct {
+	Algorithm        pkix.AlgorithmIdentifier
+	SubjectPublicKey asn1.BitString
 }
