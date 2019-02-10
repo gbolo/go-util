@@ -19,7 +19,7 @@ import (
 	"os"
 )
 
-var (
+var (	
 	publicKey crypto.PublicKey
 	// SKISha1 is the raw public key hashed with SHA1 (hex encoded)
 	SKISha1 string
@@ -84,12 +84,12 @@ func main() {
 func calculateSKI() {
 	switch pubKey := publicKey.(type) {
 	case ecdsa.PublicKey:
-		fmt.Printf("EC Key (%v)\n", pubKey.Curve.Params().Name)
+		fmt.Printf("key type: EC (%v)\n", pubKey.Curve.Params().Name)
 		raw := elliptic.Marshal(pubKey.Curve, pubKey.X, pubKey.Y)
 		SKISha1 = fmt.Sprintf("%x", sha1.Sum(raw))
 		SKISha256 = fmt.Sprintf("%x", sha256.Sum256(raw))
 	case rsa.PublicKey:
-		fmt.Printf("RSA Key (%v bits)\n", pubKey.N.BitLen())
+		fmt.Printf("key type: RSA Key (%v bits)\n", pubKey.N.BitLen())
 		raw := pubKey.N.Bytes()
 		SKISha1 = fmt.Sprintf("%x", sha1.Sum(raw))
 		SKISha256 = fmt.Sprintf("%x", sha256.Sum256(raw))
