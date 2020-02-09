@@ -24,8 +24,70 @@ hq is a simple binary cli that reads in a `DSL` file on disk.
 hq will attempt to make http POSTs to each target host for each defined task for "modules" which it understands
 
 
-## Features (and lack of features)
- // TODO
+## Modules
+the following "modules" are implemented.
+**NOTE: these modules are basic, they will ALWAYS execute the task regardless of the current state of the resource**
+
+### directory
+```
+# create/delete a directory
+- module: directory
+  # path to the directory
+  name: /tmp/test
+  # valid states: present, absent
+  state: absent
+```
+
+### file
+```
+# create/delete a file
+- module: file
+  # path to the file
+  name: /tmp/test/f1.txt
+  # valid states: present, absent
+  state: absent
+  # the content of the file (if state is present)
+  content: |
+      some test content
+      for file f1.txt
+```
+
+### apt (package management)
+**This module requires that `apt-get` be installed on target host**
+```
+# install/remove a package via apt-get
+- module: apt
+  # the name of the package
+  name: htop
+  # valid states: present, absent
+  state: absent
+
+# setting state to update will update the apt-get cache
+- module: apt
+  state: update
+```
+
+### service
+**This module requires that `systemd` is the init system for the target host**
+```
+# start/stop/restart a systemd service
+- module: service
+  # the name of the service
+  name: ntp
+  # valid states: start, stop, restart
+  state: start
+```
+
+### shellcmd (run a shell command)
+**This module will execute a command on a new `/bin/sh` shell.**
+The command output is ignored. Success depends on exit code.
+It is expected that the command NOT be interactive and terminates prior to the http server timeout settings :)
+```
+# run a shell command
+- module: shellcmd
+  # the shell command to run
+  name: ls -alt > ls.output
+```
 
 ## Q&A
 
