@@ -39,6 +39,10 @@ tasks:
     state: present
     name: htop
 
+  # run a shell command
+  - module: shellcmd
+    name: ls -alt > ls.output
+
   # start/stop/restart a systemd service
   - module: service
     state: start

@@ -44,6 +44,8 @@ func handlerTask(w http.ResponseWriter, req *http.Request) {
 		writeJSONResponse(w, http.StatusOK, ModuleApt(task))
 	case "service":
 		writeJSONResponse(w, http.StatusOK, ModuleService(task))
+	case "shellcmd":
+		writeJSONResponse(w, http.StatusOK, ModuleShellCmd(task))
 	// we dont support anything else but the above
 	default:
 		log.Errorf("unrecognized module specified: %s", task.Module)
