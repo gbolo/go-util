@@ -2,8 +2,8 @@ log_level: INFO
 
 # specify the URL for each target host here
 targets:
-  - http://user:pass@127.0.0.1:18001
-  - http://user:pass@127.0.0.1:18002
+  - http://127.0.0.1:18001
+  - http://127.0.0.1:18002
 
 
 # specify the task details to be executed on each target host here

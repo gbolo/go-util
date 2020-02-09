@@ -17,10 +17,11 @@ func main() {
 	if len(tasks) < 1 {
 		log.Fatalf("no tasks have been specified")
 	}
-	log.Infof("found %d task(s) to execute", len(tasks))
+	log.Infof("found %d task(s) to submit", len(tasks))
 
 	for _, host := range targetHosts {
 		for _, task := range tasks {
+			log.Infof("submitting task (%s) to target %s", task.Module, host)
 			result, err := submitTask(host+taskEndpoint, task)
 			if err != nil {
 				log.Errorf("there was an error submitting task: %v", err)
