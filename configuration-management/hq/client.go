@@ -54,7 +54,7 @@ var (
 func createHTTPClient() *http.Client {
 	return &http.Client{
 		// http request timeout
-		Timeout: 5 * time.Second,
+		Timeout: 90 * time.Second,
 
 		// transport settings
 		Transport: &http.Transport{
@@ -67,17 +67,16 @@ func createHTTPClient() *http.Client {
 			},
 
 			// sane timeouts
-			ExpectContinueTimeout: 1 * time.Second,
 			IdleConnTimeout:       90 * time.Second,
-			ResponseHeaderTimeout: 5 * time.Second,
+			ResponseHeaderTimeout: 60 * time.Second,
 			MaxIdleConns:          10,
 			MaxIdleConnsPerHost:   5,
 			DisableCompression:    true,
 
 			// dialer timeouts
 			DialContext: (&net.Dialer{
-				Timeout:   5 * time.Second,
-				KeepAlive: 30 * time.Second,
+				Timeout:   90 * time.Second,
+				KeepAlive: 15 * time.Second,
 			}).DialContext,
 		},
 	}

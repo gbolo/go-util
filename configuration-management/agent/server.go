@@ -18,7 +18,7 @@ import (
 
 var (
 	// set timeouts to avoid Slowloris attacks.
-	httpWriteTimeout = time.Second * 15
+	httpWriteTimeout = time.Second * 60
 	httpReadTimeout  = time.Second * 15
 	// the maximum amount of time to wait for the
 	// next request when keep-alives are enabled
