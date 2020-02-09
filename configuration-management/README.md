@@ -108,4 +108,5 @@ Although i realize that it probably wasn't the best choice for this :)
 ## TODO
  - add authentication to agent http server (via auth http header and/or TLS mutual auth)
  - make modules understand current state of resource and improve result returned
- - add support for other OSes (for package module) like alpine and/or centOS
+ - add support for other OS (for package module) like alpine and/or centOS
+ - submit each task to every target host in parallel
