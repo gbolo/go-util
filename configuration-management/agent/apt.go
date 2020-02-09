@@ -43,7 +43,7 @@ func ModuleApt(task task) (result result) {
 }
 
 func AptInstall(pkg string) error {
-	cmd := exec.Command("apt-get", "install", pkg)
+	cmd := exec.Command("apt-get", "-y", "install", pkg)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%v: %s", err, out)
@@ -52,7 +52,7 @@ func AptInstall(pkg string) error {
 }
 
 func AptRemove(pkg string) error {
-	cmd := exec.Command("apt-get", "remove", pkg)
+	cmd := exec.Command("apt-get", "-y", "remove", pkg)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%v: %s", err, out)
