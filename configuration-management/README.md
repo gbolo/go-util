@@ -9,8 +9,13 @@ The `HQ` reads in a simple `DSL` in yaml which then gets translated to API calls
  - agent: `testdata/agent.yaml`
  - HQ: `testdata/dsl.yaml`
 
-## Instructions
- // TODO
+## Test Instructions
+**Docker is required to follow these test instructions.**
+ 1. build the docker image: `./build-docker.sh`
+ 2. run some agents: `./run-agent.sh 18001 && ./run-agent.sh 18002`
+ 3. (optional) modify the hq dsl file: `vi testdata/dsl.yaml`
+ 4. run the hq: `./run-hq.sh`
+ 5. (optional) view agent logs `docker logs agent18001`
 
 ## Design
 
@@ -99,3 +104,8 @@ Therefore, I concluded that I could only do "interesting" things if the target h
 **Why Go?**
 it's my most familiar language at the moment.
 Although i realize that it probably wasn't the best choice for this :)
+
+## TODO
+ - add authentication to agent http server (via auth http header and/or TLS mutual auth)
+ - make modules understand current state of resource and improve result returned
+ - add support for other OSes (for package module) like alpine and/or centOS
