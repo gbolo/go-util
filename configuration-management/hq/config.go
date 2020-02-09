@@ -10,7 +10,6 @@ func initViper(cfgFile string) {
 	// Set some defaults
 	viper.SetDefault("log_level", "DEBUG")
 
-
 	// set default config name and paths to look for it
 	viper.SetConfigType("yaml")
 	viper.SetConfigName("dsl")
@@ -32,14 +31,13 @@ func initViper(cfgFile string) {
 	}
 }
 
-
-
 func getTargets() []string {
 	return viper.GetStringSlice("targets")
 }
 
 func getTasks() (tasks []task) {
-	err := viper.UnmarshalKey("tasks", &tasks); if err != nil {
+	err := viper.UnmarshalKey("tasks", &tasks)
+	if err != nil {
 		log.Fatalf("unable to read tasks: %v", err)
 	}
 	return

@@ -4,8 +4,8 @@ package main
 type task struct {
 	// required
 	Module string `json:"module"`
-	Name string `json:"name"`
-	State string `json:"state"`
+	Name   string `json:"name"`
+	State  string `json:"state"`
 
 	// used for file module
 	Content string `json:"content,omitempty"`
@@ -17,4 +17,3 @@ type result struct {
 	Message string `json:"message"`
 	// TODO: maybe add a boolean for changed, which would represent if the resource has changed
 }
-

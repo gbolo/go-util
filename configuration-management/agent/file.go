@@ -35,7 +35,7 @@ func ModuleFile(task task) (result result) {
 }
 
 func WriteFile(path, content string) error {
-	if path == "" ||  path == "/" {
+	if path == "" || path == "/" {
 		return fmt.Errorf("invalid path specified: %s", path)
 	}
 	contentBytes := []byte(content)

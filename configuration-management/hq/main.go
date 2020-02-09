@@ -21,7 +21,7 @@ func main() {
 
 	for _, host := range targetHosts {
 		for _, task := range tasks {
-			result, err := submitTask(host + taskEndpoint, task)
+			result, err := submitTask(host+taskEndpoint, task)
 			if err != nil {
 				log.Errorf("there was an error submitting task: %v", err)
 			}

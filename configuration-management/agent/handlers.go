@@ -10,7 +10,6 @@ type errorResponse struct {
 	Error string `json:"error"`
 }
 
-
 // returns version information
 func handlerVersion(w http.ResponseWriter, req *http.Request) {
 	writeJSONResponse(w, http.StatusOK, map[string]string{"version": "alpha"})

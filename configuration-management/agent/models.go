@@ -2,9 +2,9 @@ package main
 
 // represents a task that this agent should execute
 type task struct {
-	Module string `json:"module"`
-	Name string `json:"name"`
-	State string `json:"state"`
+	Module  string `json:"module"`
+	Name    string `json:"name"`
+	State   string `json:"state"`
 	Content string `json:"content,omitempty"`
 }
 

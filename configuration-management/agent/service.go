@@ -19,7 +19,7 @@ func ModuleService(task task) (result result) {
 }
 
 func ServiceCtl(service, operation string) error {
-	if operation != "start" &&  operation != "stop" &&  operation != "restart" {
+	if operation != "start" && operation != "stop" && operation != "restart" {
 		return fmt.Errorf("service operation not supported: %s", operation)
 	}
 	cmd := exec.Command("systemctl", operation, service)
