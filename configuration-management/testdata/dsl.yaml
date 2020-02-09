@@ -1,0 +1,45 @@
+log_level: INFO
+
+# specify the URL for each target host here
+targets:
+  - http://user:pass@127.0.0.1:18001
+  - http://user:pass@127.0.0.1:18002
+
+
+# specify the task details to be executed on each target host here
+tasks:
+
+  # create/delete a directory
+  - module: directory
+    state: absent
+    name: /tmp/test
+
+  - module: directory
+    state: present
+    name: /tmp/test
+
+  # push or remove a file
+  - module: file
+    state: present
+    name: /tmp/test/f1.txt
+    content: |
+      some test content
+      for file f1.txt
+
+  - module: file
+    state: absent
+    name: /tmp/test/f1.txt
+
+  # update apt cache
+  - module: apt
+    state: update
+
+  # install/remove a package via apt
+  - module: apt
+    state: present
+    name: htop
+
+  # start/stop/restart a systemd service
+  - module: service
+    state: start
+    name: ntp
