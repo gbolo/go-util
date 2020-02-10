@@ -2,18 +2,14 @@ package main
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/viper"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
 )
-
-func init() {
-	hqClient = createHTTPClient()
-}
 
 var (
 	// our global client
@@ -21,37 +17,13 @@ var (
 
 	// agent task endpoint
 	taskEndpoint = "/api/v1/task"
-
-	// PCI compliance as of Jun 30, 2018: anything under TLS 1.1 must be disabled
-	// we bump this up to TLS 1.2 so we can support best possible ciphers
-	tlsMinVersion = uint16(tls.VersionTLS12)
-	// allowed ciphers when in hardened mode
-	// disable CBC suites (Lucky13 attack) this means TLS 1.1 can't work (no GCM)
-	// only use perfect forward secrecy ciphers
-	tlsCiphers = []uint16{
-		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-		tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-		// these ciphers require go 1.8+
-		tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-		tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-	}
-	// EC curve preference when in hardened mode
-	// curve reference: http://safecurves.cr.yp.to/
-	tlsCurvePreferences = []tls.CurveID{
-		// this curve is a non-NIST curve with no NSA influence. Prefer this over all others!
-		// this curve required go 1.8+
-		tls.X25519,
-		// These curves are provided by NIST; prefer in descending order
-		tls.CurveP521,
-		tls.CurveP384,
-		tls.CurveP256,
-	}
 )
 
 // createHTTPClient creates an http client which we can reuse
 func createHTTPClient() *http.Client {
+	// get TLS config
+	clientTLSConfig := createTLSConfig()
+
 	return &http.Client{
 		// http request timeout
 		Timeout: 90 * time.Second,
@@ -59,12 +31,7 @@ func createHTTPClient() *http.Client {
 		// transport settings
 		Transport: &http.Transport{
 			// TLS Config
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: false,
-				MinVersion:         tlsMinVersion,
-				CipherSuites:       tlsCiphers,
-				CurvePreferences:   tlsCurvePreferences,
-			},
+			TLSClientConfig: clientTLSConfig,
 
 			// sane timeouts
 			IdleConnTimeout:       90 * time.Second,
@@ -84,12 +51,26 @@ func createHTTPClient() *http.Client {
 
 // submit a task
 func submitTask(url string, task task) (taskResult result, err error) {
+	// create request body
 	jsonBytes, _ := json.Marshal(task)
-	res, err := hqClient.Post(url, "application/json", bytes.NewBuffer(jsonBytes))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
 	if err != nil {
 		return
 	}
 
+	// set auth header if secret was specified
+	if viper.GetString("secret") != "" {
+		req.Header.Set("HQ-SECRET", viper.GetString("secret"))
+	}
+
+	// do request
+	req.Header.Set("Content-Type", "application/json")
+	res, err := hqClient.Do(req)
+	if err != nil {
+		return
+	}
+
+	// read response
 	defer res.Body.Close()
 	if res.StatusCode == 200 {
 		log.Debugf("task was submitted successfully to: %v", url)

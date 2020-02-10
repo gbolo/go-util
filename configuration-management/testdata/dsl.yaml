@@ -1,9 +1,28 @@
 log_level: INFO
 
+# secret used for authorization to target hosts
+secret: BahrHZQLNpgYC2Vf
+
+# client TLS settings
+tls:
+
+  # path to pem encoded x509 CA certificate used to validate agents server cert
+  # note: this pem can contain multiple ca certs
+  ca_cert: ./testdata/tls/ca_root.pem
+
+  # enables mutual TLS. Agent will provide a client cert when asked
+  client_auth_enabled: true
+
+  # path to client pem encoded x509 certificate
+  client_cert: ./testdata/tls/client_hq.pem
+
+  # path to client pem encoded pkcs1/8 private key
+  client_key: ./testdata/tls/client_hq-key.pem
+
 # specify the URL for each target host here
 targets:
-  - http://127.0.0.1:18001
-  - http://127.0.0.1:18002
+  - https://127.0.0.1:18001
+  - https://127.0.0.1:18002
 
 
 # specify the task details to be executed on each target host here

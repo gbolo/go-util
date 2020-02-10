@@ -1,3 +1,6 @@
+# secret used for HQ authorization
+secret: BahrHZQLNpgYC2Vf
+
 # agent http server settings
 server:
 
@@ -17,11 +20,17 @@ server:
   # TLS options
   tls:
     # enables TLS
-    enabled: false
+    enabled: true
 
     # path to pem encoded x509 certificate chain
     # should include the following x509 certs: server > intermediate CA 1 > ... > intermediate CA X
-    cert_chain: /path/to/server-cert-chain.pem
+    cert_chain: ./testdata/tls/server_agent-chain.pem
 
     # path to pem encoded pkcs1/8 private key
-    private_key: /path/to/server-key.pem
+    private_key: ./testdata/tls/server_agent-key.pem
+
+    # enabled mutual TLS (client cert authentication)
+    client_auth_enabled: true
+
+    # path to pem encoded x509 CA certificate used to validate HQ client cert
+    client_auth_ca: ./testdata/tls/ca_root.pem

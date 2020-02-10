@@ -7,6 +7,8 @@ func main() {
 	initViper("")
 	log.Infof("config file being used: %v", viper.ConfigFileUsed())
 
+	hqClient = createHTTPClient()
+
 	targetHosts := getTargets()
 	if len(targetHosts) < 1 {
 		log.Fatalf("no target hosts have been specified")

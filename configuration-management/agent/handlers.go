@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/spf13/viper"
 	"io/ioutil"
 	"net/http"
 )
@@ -17,6 +18,12 @@ func handlerVersion(w http.ResponseWriter, req *http.Request) {
 
 // executes a task
 func handlerTask(w http.ResponseWriter, req *http.Request) {
+	// validate authorization header if enabled
+	if viper.GetString("secret") != "" && req.Header.Get("HQ-SECRET") != viper.GetString("secret") {
+		writeJSONResponse(w, http.StatusUnauthorized, errorResponse{"unauthorized"})
+		return
+	}
+
 	// try to read the body
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {

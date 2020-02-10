@@ -21,7 +21,8 @@ The `HQ` reads in a simple `DSL` in yaml which then gets translated to API calls
 
 ### Agent
 the agent is a simple daemon binary that is running on the target host.
-It exposes a simple REST API with only one endpoint: `api/v1/task`.
+It exposes a simple REST API with only one endpoint: `/api/v1/task`.
+Authentication to this API is configurable and supports secret and/or mutual TLS.
 When a POST request is made to this endpoint, it will attempt to execute the corresponding "module"
 
 ### HQ
@@ -106,7 +107,7 @@ it's my most familiar language at the moment.
 Although i realize that it probably wasn't the best choice for this :)
 
 ## TODO
- - add authentication to agent http server (via auth http header and/or TLS mutual auth)
+ - ~~add authentication to agent http server (via auth http header and/or TLS mutual auth)~~
  - make modules understand current state of resource and improve result returned
  - add support for other OS (for package module) like alpine and/or centOS
  - submit each task to every target host in parallel
