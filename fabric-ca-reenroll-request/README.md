@@ -5,21 +5,28 @@ simple wrapper to capture a `REENROLL` request made by the `fabric-ca-client` fo
 ## Example
 ```
 Usage of ./fabric-ca-reenroll-request:
-  -b string
-    	path to fabric-ca-client binary (default "./fabric-ca-client")
-  -d	enable debug
-  -m string
-    	base folder of msp directory (default "./testdata")
-  -n string
-    	CA instance name
-  -p string
-    	CA profile to use
-exit status 2
+-b string
+    path to fabric-ca-client binary (default "./fabric-ca-client")
+-d	enable debug
+-label string
+    name of pkcs11 label/slot
+-lib string
+    path to pkcs11 library
+-m string
+    base folder of msp directory (default "./testdata")
+-n string
+    CA instance name
+-p string
+    CA profile to use
+-pin string
+    pin for pkcs11 label/slot
+-pkcs11
+    enable pkcs11
 ```
 
 Successful Usage
 ```
-./fabric-ca-reenroll-request -b /tmp/fabric-ca-client-v1.4.3 
+./fabric-ca-reenroll-request -b /tmp/fabric-ca-client-v1.4.3
 using bin: /tmp/fabric-ca-client-v1.4.3
 fabric-ca-client:
  Version: 1.4.3
