@@ -9,10 +9,14 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/big"
+	"net/http"
 	"os"
+	"path"
 	"plugin"
+	"runtime"
 	"strings"
 )
 
@@ -31,16 +35,65 @@ var (
 	pluginName    = "someplugin"
 	pluginBaseDir = "./testdata/plugins"
 	// more specific paths for production
-	preferredPluginPath          = fmt.Sprintf("%s/%s_%s.so", pluginBaseDir, pluginName, version)
+	preferredPluginFilename      = fmt.Sprintf("%s-%s-%s-%s.so", pluginName, strings.ToLower(version), runtime.Version(), runtime.GOARCH)
+	preferredPluginPath          = fmt.Sprintf("%s/%s", pluginBaseDir, preferredPluginFilename)
 	preferredPluginSignaturePath = fmt.Sprintf("%s.sig", preferredPluginPath)
 	// maybe less specific paths for dev??
 	fallbackPluginPath          = fmt.Sprintf("%s/%s.so", pluginBaseDir, pluginName)
 	fallbackPluginSignaturePath = fmt.Sprintf("%s.sig", fallbackPluginPath)
+
+	// baseurl to fetch plugin
+	baseUrl = "http://127.0.0.1:18675/plugins"
+	// this is where we store our downloads
+	downloadDir = "./testdata/plugins-fetched"
 )
 
 type SomePlugin interface {
 	Version() string
 	DoSomething()
+}
+
+func downloadFile(url string) (file string, err error) {
+	req, _ := http.NewRequest("GET", url, nil)
+	httpClient := http.Client{}
+
+	// try to download the file
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	// Create the file
+	downloadPath := fmt.Sprintf("%s/%s", downloadDir, path.Base(req.URL.Path))
+	out, err := os.Create(downloadPath)
+	if err != nil {
+		return
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	return downloadPath, err
+}
+
+func fetchPlugin() (plugin, pluginSig string, err error) {
+	// download the plugin
+	pluginUrlPath := fmt.Sprintf("%s/%s", baseUrl, preferredPluginFilename)
+	fmt.Println("fetching plugin via URL:", pluginUrlPath)
+	pluginPath, err := downloadFile(pluginUrlPath)
+	if err != nil {
+		return
+	}
+
+	// download the signature file
+	fmt.Println("fetching plugin signature via URL:", pluginUrlPath+".sig")
+	pluginSigPath, err := downloadFile(pluginUrlPath + ".sig")
+	if err != nil {
+		return
+	}
+
+	return pluginPath, pluginSigPath, nil
 }
 
 func findPlugin() (plugin, pluginSig string) {
@@ -123,8 +176,16 @@ func validateSignature(signature string, data []byte) bool {
 }
 
 func main() {
+	// attempt to fetch from URL first
+	pluginFile, sigFile, err := fetchPlugin()
+	if err != nil {
+		fmt.Println("unable to download plugin:", err)
+		// fallback to local files
+		fmt.Println("falling back to loading plugins from local filesystem")
+		pluginFile, sigFile = findPlugin()
+	}
 
-	pluginFile, sigFile := findPlugin()
+	// validate the plugin
 	pluginFileBytes, err := ioutil.ReadFile(pluginFile)
 	if err != nil {
 		panic(err)
