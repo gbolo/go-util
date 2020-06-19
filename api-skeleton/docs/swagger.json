@@ -1,0 +1,53 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Swagger API appname",
+        "title": "appname",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "email": "dev@appname"
+        },
+        "license": {},
+        "version": "0.1"
+    },
+    "basePath": "/api",
+    "paths": {
+        "/v1/version": {
+            "get": {
+                "description": "Returns portal version information",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Misc"
+                ],
+                "summary": "Returns portal version information",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/backend.versionInfo"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "backend.versionInfo": {
+            "type": "object",
+            "properties": {
+                "build_date": {
+                    "type": "string"
+                },
+                "build_ref": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
