@@ -1,0 +1,35 @@
+basePath: /api
+definitions:
+  backend.versionInfo:
+    properties:
+      build_date:
+        type: string
+      build_ref:
+        type: string
+      version:
+        type: string
+    type: object
+info:
+  contact:
+    email: dev@token-provider
+    name: API Support
+  description: Swagger API token-provider
+  license: {}
+  termsOfService: http://swagger.io/terms/
+  title: token-provider
+  version: "0.1"
+paths:
+  /v1/version:
+    get:
+      description: Returns version information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/backend.versionInfo'
+      summary: Returns portal information
+      tags:
+      - Misc
+swagger: "2.0"

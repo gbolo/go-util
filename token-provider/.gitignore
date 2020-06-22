@@ -1,0 +1,7 @@
+.idea
+**/bin
+vendor
+testdata/coverage.*
+testdata/statedb/*.db
+testdata/scripts/*.db
+githide
