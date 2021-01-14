@@ -9,7 +9,9 @@ In order for the flow to work you need the following:
   - `oidc.client_id` must match configuration
   - jwks URL must be onboarded as `<external_self_baseurl>/api/v1/jwks`
   - redirect URL must be onboarded as `<external_self_baseurl>/api/v1/callback`
-    
+
+**NOTE** the default configuration file is located in: [testdata/sampleconfig/config.yaml](testdata/sampleconfig/config.yaml)
+
 ## Begin flow
 start your OIDC client server like: `go run cmd/oidc-client/main.go`.
 Then navigate to: `<external_self_baseurl>/api/v1/auth`
