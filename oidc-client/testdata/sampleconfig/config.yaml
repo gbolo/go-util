@@ -30,7 +30,7 @@ server:
     private_key: /path/to/server-key.pem
 
 
-# this URL should make
+# this URL should be reachable by OIDC DAC server
 external_self_baseurl: https://gbolo-dac.mid.linuxctl.com:10443
 
 #
