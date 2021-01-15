@@ -67,6 +67,8 @@ func createRequestJWT(state, redirectURL string) (jwtString string) {
 		"state":                 state,
 		"iat":                   time.Now().Unix(),
 		"ui_locales":            "en-CA",
+		// mitigate replay attacks
+		"nonce": util.GenerateRandomString(8),
 	})
 
 	// has to match our advertised jwks
@@ -86,7 +88,7 @@ func createAssertionJWT() (jwtString string) {
 		"iss": viper.GetString("oidc.client_id"),
 		"iat": time.Now().Unix(),
 		"exp": time.Now().Add(time.Minute * 10).Unix(),
-		// random string
+		// a unique identifier for this JWT
 		"jti": util.GenerateRandomString(16),
 	})
 

@@ -40,8 +40,15 @@ type Route struct {
 }
 
 var callbackPath = getEndpoint("callback")
+var authPath = getEndpoint("auth")
 
 var routes = []Route{
+	{
+		"Landing Page",
+		"GET",
+		"/",
+		handlerLanding,
+	},
 	{
 		"Version",
 		"GET",
@@ -57,7 +64,7 @@ var routes = []Route{
 	{
 		"Auth",
 		"GET",
-		getEndpoint("auth"),
+		authPath,
 		handlerAuthRedirect,
 	},
 	{

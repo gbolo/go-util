@@ -1,5 +1,13 @@
 # OIDC Test Client for use with OIDC DAC Flow
 
+## DISCLAIMER
+This application was written to help me understand the details of a specific OIDC flow.
+This is NOT a general purpose OIDC client, and such does not support many standard options.
+This application skips many steps and does not use any oauth2/oidc client libraries.
+PLEASE USE A REAL LIBRARY WHEN DEVELOPING YOUR OIDC APPLICATION.
+
+**!! THIS APPLICATION SHOULD NOT BE USED FOR ANY OTHER PURPOSE OTHER THAN TESTING AND EDUCATION !!**
+
 ## Requirements
 In order for the flow to work you need the following:
 - you need a reachable URL so that the oidc server can reach your jwks URL. Set this in config file: `external_self_baseurl`

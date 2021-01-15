@@ -12,6 +12,16 @@ import (
 // for now, we dont worry about sessions. use the same state always
 var defaultState = "D2FjBT2M2tqs5CFF"
 
+func handlerLanding(w http.ResponseWriter, req *http.Request) {
+	htmlText := fmt.Sprintf(
+		"<h1>Test OIDC DAC Integration</h1><br/>To begin an OIDC DAC flow, follow this link: <a href=\"%s\">%s</a>",
+		authPath,
+		authPath,
+	)
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(htmlText))
+}
+
 // @Summary Returns version information
 // @Description Returns version information
 // @Tags Misc
