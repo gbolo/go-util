@@ -79,6 +79,11 @@ func printConfigSummary() {
 		"server.tls.enabled",
 		"server.access_log",
 		"server.compression",
+		"external_self_baseurl",
+		"jwt.kid",
+		"jwt.signing_key",
+		"oidc.client_id",
+		"oidc.discovery_url",
 	} {
 		log.Debugf("%s: %s\n", c, viper.GetString(c))
 	}
@@ -87,7 +92,12 @@ func printConfigSummary() {
 // checks that the config is correctly defined
 func sanityChecks() {
 	// these values cannot be empty
-	keysThatCannotBeEmpty := []string{}
+	keysThatCannotBeEmpty := []string{
+		"jwt.kid",
+		"jwt.signing_key",
+		"oidc.client_id",
+		"oidc.discovery_url",
+	}
 	for _, key := range keysThatCannotBeEmpty {
 		if viper.GetString(key) == "" {
 			log.Fatalf("%s cannot be empty", key)
