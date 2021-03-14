@@ -1,0 +1,182 @@
+basePath: /api
+definitions:
+  backend.Client:
+    properties:
+      id:
+        description: gorm.Model `valid:"-"`
+        type: string
+      name:
+        type: string
+      url:
+        type: string
+    type: object
+  backend.errorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  backend.successResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  backend.versionInfo:
+    properties:
+      build_date:
+        type: string
+      build_ref:
+        type: string
+      version:
+        type: string
+    type: object
+info:
+  contact:
+    email: dev@appname
+    name: API Support
+  description: Swagger API appname
+  termsOfService: http://swagger.io/terms/
+  title: appname
+  version: "0.1"
+paths:
+  /v1/client:
+    get:
+      description: Returns a list of all clients
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/backend.Client'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/backend.errorResponse'
+      summary: Returns a list of all clients
+      tags:
+      - Clients
+    post:
+      description: Add a new Client
+      parameters:
+      - description: Add Client
+        in: body
+        name: client
+        required: true
+        schema:
+          $ref: '#/definitions/backend.Client'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: new client was added
+          schema:
+            $ref: '#/definitions/backend.successResponse'
+        "400":
+          description: invalid request body
+          schema:
+            $ref: '#/definitions/backend.errorResponse'
+        "409":
+          description: a client with that ID already exists. Try running an update
+            instead
+          schema:
+            $ref: '#/definitions/backend.errorResponse'
+        "500":
+          description: server was unable to process the request. Usually a database
+            issue
+          schema:
+            $ref: '#/definitions/backend.errorResponse'
+      summary: Add a new Client
+      tags:
+      - Clients
+    put:
+      description: Updates an existing Client with the specified ID
+      parameters:
+      - description: Add Client
+        in: body
+        name: client
+        required: true
+        schema:
+          $ref: '#/definitions/backend.Client'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: client has been updated
+          schema:
+            $ref: '#/definitions/backend.successResponse'
+        "304":
+          description: client does not need updating, it's already at that state
+          schema:
+            $ref: '#/definitions/backend.successResponse'
+        "400":
+          description: invalid request body
+          schema:
+            $ref: '#/definitions/backend.errorResponse'
+        "404":
+          description: a client with that ID does not exist
+          schema:
+            $ref: '#/definitions/backend.errorResponse'
+        "500":
+          description: server was unable to process the request. Usually a database
+            issue
+          schema:
+            $ref: '#/definitions/backend.errorResponse'
+      summary: Updates an existing Client
+      tags:
+      - Clients
+  /v1/client/{id}:
+    delete:
+      description: Delete a Client by ID
+      parameters:
+      - description: Client ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/backend.successResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/backend.errorResponse'
+      summary: Delete a Client by ID
+      tags:
+      - Clients
+  /v1/healthz:
+    get:
+      description: If the status is not 200, then the application is unhealthy
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/backend.successResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/backend.errorResponse'
+      summary: Returns the health of the application
+      tags:
+      - Misc
+  /v1/version:
+    get:
+      description: Returns version information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/backend.versionInfo'
+      summary: Returns version information
+      tags:
+      - Misc
+swagger: "2.0"

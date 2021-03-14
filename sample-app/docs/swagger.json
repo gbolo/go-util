@@ -1,0 +1,273 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Swagger API appname",
+        "title": "appname",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "email": "dev@appname"
+        },
+        "version": "0.1"
+    },
+    "basePath": "/api",
+    "paths": {
+        "/v1/client": {
+            "get": {
+                "description": "Returns a list of all clients",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Clients"
+                ],
+                "summary": "Returns a list of all clients",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/backend.Client"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/backend.errorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Updates an existing Client with the specified ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Clients"
+                ],
+                "summary": "Updates an existing Client",
+                "parameters": [
+                    {
+                        "description": "Add Client",
+                        "name": "client",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/backend.Client"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "client has been updated",
+                        "schema": {
+                            "$ref": "#/definitions/backend.successResponse"
+                        }
+                    },
+                    "304": {
+                        "description": "client does not need updating, it's already at that state",
+                        "schema": {
+                            "$ref": "#/definitions/backend.successResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/backend.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "a client with that ID does not exist",
+                        "schema": {
+                            "$ref": "#/definitions/backend.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "server was unable to process the request. Usually a database issue",
+                        "schema": {
+                            "$ref": "#/definitions/backend.errorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Add a new Client",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Clients"
+                ],
+                "summary": "Add a new Client",
+                "parameters": [
+                    {
+                        "description": "Add Client",
+                        "name": "client",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/backend.Client"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "new client was added",
+                        "schema": {
+                            "$ref": "#/definitions/backend.successResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/backend.errorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "a client with that ID already exists. Try running an update instead",
+                        "schema": {
+                            "$ref": "#/definitions/backend.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "server was unable to process the request. Usually a database issue",
+                        "schema": {
+                            "$ref": "#/definitions/backend.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/client/{id}": {
+            "delete": {
+                "description": "Delete a Client by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Clients"
+                ],
+                "summary": "Delete a Client by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Client ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/backend.successResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/backend.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/healthz": {
+            "get": {
+                "description": "If the status is not 200, then the application is unhealthy",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Misc"
+                ],
+                "summary": "Returns the health of the application",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/backend.successResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/backend.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/version": {
+            "get": {
+                "description": "Returns version information",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Misc"
+                ],
+                "summary": "Returns version information",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/backend.versionInfo"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "backend.Client": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "gorm.Model `valid:\"-\"`",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "backend.errorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "backend.successResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "backend.versionInfo": {
+            "type": "object",
+            "properties": {
+                "build_date": {
+                    "type": "string"
+                },
+                "build_ref": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
