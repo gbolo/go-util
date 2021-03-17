@@ -13,8 +13,20 @@ http -v POST ${API_ENDPOINT}/api/v1/client id=3 name=reddit url=https://reddit.c
 # RETRIEVE CLIENTS
 http -v GET ${API_ENDPOINT}/api/v1/client
 
+# GET CLIENT STATUS
+http -v GET ${API_ENDPOINT}/api/v1/client/1
+
 # UPDATE CLIENT
-http -v PUT ${API_ENDPOINT}/api/v1/client id=1 name=linuxctl url=https://linuxctl.com/404
+http -v PUT ${API_ENDPOINT}/api/v1/client id=1 name=linuxctl url=https://linuxctl.com/some404
+
+# GET CLIENT STATUS
+http -v GET ${API_ENDPOINT}/api/v1/client/1
+
+# UPDATE CLIENT
+http -v PUT ${API_ENDPOINT}/api/v1/client id=1 name=linuxctl url=https://notreachable.invalid
+
+# GET CLIENT STATUS
+http -v GET ${API_ENDPOINT}/api/v1/client/1
 
 # RETRIEVE CLIENTS
 http -v GET ${API_ENDPOINT}/api/v1/client

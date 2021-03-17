@@ -19,3 +19,9 @@ type Client struct {
 	Name string `json:"name" valid:"length(1|64)"`
 	URL  string `json:"url" valid:"url"`
 }
+
+type ClientStatus struct {
+	Client
+	Reachable bool   `json:"reachable"`
+	Status    string `json:"status"`
+}

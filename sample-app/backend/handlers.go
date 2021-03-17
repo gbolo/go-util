@@ -213,3 +213,22 @@ func handlerDeleteClient(w http.ResponseWriter, req *http.Request) {
 	}
 	writeJSONResponse(w, http.StatusOK, successResponse{"OK"})
 }
+
+// @Summary Return the status of a client
+// @Description Return the status of a client with specified ID
+// @Tags Clients
+// @Produce json
+// @Success 200 {object} ClientStatus "returns a client's status"
+// @Failure 404 {object} errorResponse "a client with that ID does not exist"
+// @Failure 500 {object} errorResponse "an error occurred. Usually a database issue"
+// @Router /v1/client/{id} [get]
+func handlerGetClientStatus(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	id := vars["id"]
+	client, err := dbGetClient(id)
+	if err != nil {
+		writeJSONResponse(w, http.StatusInternalServerError, errorResponse{err.Error()})
+		return
+	}
+	writeJSONResponse(w, http.StatusOK, getClientStatus(client))
+}

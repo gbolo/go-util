@@ -71,6 +71,12 @@ var routes = []Route{
 		handlerDeleteClient,
 	},
 	{
+		"GetClientStatus",
+		"GET",
+		getEndpoint("client/{id}"),
+		handlerGetClientStatus,
+	},
+	{
 		"GetClients",
 		"GET",
 		getEndpoint("client"),
