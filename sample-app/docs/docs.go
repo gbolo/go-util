@@ -39,7 +39,7 @@ var doc = `{
                 "summary": "Returns a list of all clients",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "a list of clients",
                         "schema": {
                             "type": "array",
                             "items": {
@@ -48,7 +48,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "an error occurred. Usually a database issue",
                         "schema": {
                             "$ref": "#/definitions/backend.errorResponse"
                         }
@@ -157,6 +157,36 @@ var doc = `{
             }
         },
         "/v1/client/{id}": {
+            "get": {
+                "description": "Return the status of a client with specified ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Clients"
+                ],
+                "summary": "Return the status of a client",
+                "responses": {
+                    "200": {
+                        "description": "returns a client's status",
+                        "schema": {
+                            "$ref": "#/definitions/backend.ClientStatus"
+                        }
+                    },
+                    "404": {
+                        "description": "a client with that ID does not exist",
+                        "schema": {
+                            "$ref": "#/definitions/backend.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "an error occurred. Usually a database issue",
+                        "schema": {
+                            "$ref": "#/definitions/backend.errorResponse"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "description": "Delete a Client by ID",
                 "produces": [
@@ -177,13 +207,13 @@ var doc = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "client was deleted or does not exist",
                         "schema": {
                             "$ref": "#/definitions/backend.successResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "an error occurred. Usually a database issue",
                         "schema": {
                             "$ref": "#/definitions/backend.errorResponse"
                         }
@@ -203,13 +233,13 @@ var doc = `{
                 "summary": "Returns the health of the application",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "server is healthy",
                         "schema": {
                             "$ref": "#/definitions/backend.successResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "server is unhealthy. Usually a database issue",
                         "schema": {
                             "$ref": "#/definitions/backend.errorResponse"
                         }
@@ -243,10 +273,29 @@ var doc = `{
             "type": "object",
             "properties": {
                 "id": {
-                    "description": "gorm.Model ` + "`" + `valid:\"-\"` + "`" + `",
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "backend.ClientStatus": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "reachable": {
+                    "type": "boolean"
+                },
+                "status": {
                     "type": "string"
                 },
                 "url": {
