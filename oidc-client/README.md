@@ -1,5 +1,8 @@
 # OIDC Test Client for use with OIDC DAC Flow
 
+# MOVED LOCATION
+This tool has been moved to: https://github.com/gbolo/muggle-oidc
+
 ## DISCLAIMER
 This application was written to help me understand the details of a specific OIDC flow.
 This is NOT a general purpose OIDC client, and such does not support many standard options.
